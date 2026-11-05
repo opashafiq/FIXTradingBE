@@ -1,0 +1,141 @@
+20261105-06:46:34.073 : Created session
+20261105-06:46:34.089 : Connecting to 192.168.17.14 on port 7502
+20261105-06:46:34.118 : Connection succeeded
+20261105-06:46:34.141 : Initiated logon request
+20261105-06:46:34.164 : Received logon
+20261105-07:41:35.187 : Initiated logout request
+20261105-07:41:35.194 : Received logout response
+20261105-07:41:35.194 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261105-07:41:35.210 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261105-08:53:39.671 : Created session
+20261105-08:53:39.681 : Connecting to 192.168.17.14 on port 7502
+20261105-08:53:39.707 : Connection succeeded
+20261105-08:53:39.715 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:53:44.712 : Connecting to 192.168.17.14 on port 7502
+20261105-08:53:44.714 : Connection succeeded
+20261105-08:53:44.715 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:53:49.761 : Connecting to 192.168.17.14 on port 7502
+20261105-08:53:49.765 : Connection succeeded
+20261105-08:53:49.766 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:53:54.791 : Connecting to 192.168.17.14 on port 7502
+20261105-08:53:54.795 : Connection succeeded
+20261105-08:53:54.795 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:53:59.823 : Connecting to 192.168.17.14 on port 7502
+20261105-08:53:59.827 : Connection succeeded
+20261105-08:53:59.827 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:04.849 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:04.855 : Connection succeeded
+20261105-08:54:04.855 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:09.887 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:09.889 : Connection succeeded
+20261105-08:54:09.889 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:14.935 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:14.937 : Connection succeeded
+20261105-08:54:14.937 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:19.974 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:19.977 : Connection succeeded
+20261105-08:54:19.977 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:24.997 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:25.001 : Connection succeeded
+20261105-08:54:25.001 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:30.051 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:30.056 : Connection succeeded
+20261105-08:54:30.056 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:35.087 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:35.089 : Connection succeeded
+20261105-08:54:35.089 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:40.121 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:40.123 : Connection succeeded
+20261105-08:54:40.123 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:45.163 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:45.165 : Connection succeeded
+20261105-08:54:45.165 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:50.279 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:50.284 : Connection succeeded
+20261105-08:54:50.285 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:54:55.299 : Connecting to 192.168.17.14 on port 7502
+20261105-08:54:55.310 : Connection succeeded
+20261105-08:54:55.311 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:00.354 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:00.358 : Connection succeeded
+20261105-08:55:00.358 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:05.403 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:05.407 : Connection succeeded
+20261105-08:55:05.409 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:10.427 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:10.429 : Connection succeeded
+20261105-08:55:10.429 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:15.446 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:15.452 : Connection succeeded
+20261105-08:55:15.452 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:20.484 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:20.489 : Connection succeeded
+20261105-08:55:20.489 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:25.501 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:25.506 : Connection succeeded
+20261105-08:55:25.506 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:30.552 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:30.555 : Connection succeeded
+20261105-08:55:30.555 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:35.574 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:35.578 : Connection succeeded
+20261105-08:55:35.578 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:40.599 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:40.603 : Connection succeeded
+20261105-08:55:40.603 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:45.611 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:45.613 : Connection succeeded
+20261105-08:55:45.613 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:55:50.651 : Connecting to 192.168.17.14 on port 7502
+20261105-08:55:50.667 : Connection succeeded
+20261105-08:55:50.667 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:02.956 : Created session
+20261105-08:56:02.965 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:02.988 : Connection succeeded
+20261105-08:56:02.996 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:07.991 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:07.995 : Connection succeeded
+20261105-08:56:07.995 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:13.016 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:13.021 : Connection succeeded
+20261105-08:56:13.021 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:18.043 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:18.048 : Connection succeeded
+20261105-08:56:18.048 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:23.103 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:23.107 : Connection succeeded
+20261105-08:56:23.107 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:28.144 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:28.148 : Connection succeeded
+20261105-08:56:28.148 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:33.172 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:33.176 : Connection succeeded
+20261105-08:56:33.176 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:38.182 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:38.188 : Connection succeeded
+20261105-08:56:38.188 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:43.207 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:43.211 : Connection succeeded
+20261105-08:56:43.212 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:48.236 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:48.238 : Connection succeeded
+20261105-08:56:48.238 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:53.245 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:53.247 : Connection succeeded
+20261105-08:56:53.248 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:56:58.265 : Connecting to 192.168.17.14 on port 7502
+20261105-08:56:58.267 : Connection succeeded
+20261105-08:56:58.267 : Connection failed: CHSE_FIX_PASSWORD environment variable is not configured.
+20261105-08:57:14.530 : Created session
+20261105-08:57:14.539 : Connecting to 192.168.17.14 on port 7502
+20261105-08:57:14.565 : Connection succeeded
+20261105-08:57:14.587 : Initiated logon request
+20261105-08:57:14.603 : Received logon
+20261105-10:03:27.712 : Initiated logout request
+20261105-10:03:27.714 : Received logout response
+20261105-10:03:27.715 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261105-10:03:27.727 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()

@@ -26434,16 +26434,20 @@
    <value enum='2' description='CANCEL_PASSIVE' />
    <value enum='3' description='CANCEL_AGGRESSIVE_PASSIVE' />
   </field>
- </fields>
- <field number="30001" name="OrderBook" type="INT">
-    <value enum="1" description="REGULAR"/>
-    <value enum="3" description="ODD_LOT"/>
-    <value enum="4" description="BLOCK_TRADE"/>
-    <value enum="7" description="AUCTION"/>
-    <value enum="100" description="FOREIGN"/>
-    <value enum="102" description="BULK"/>
- </field>
+    <!-- Custom CHSE fields -->
 
- <field number="30004" name="OrderSource" type="STRING"/>
- <field number="30005" name="ConvertedYield" type="PERCENTAGE"/>
+    <field number="30001" name="OrderBook" type="INT">
+        <value enum="1" description="REGULAR"/>
+        <value enum="3" description="ODD_LOT"/>
+        <value enum="4" description="BLOCK_TRADE"/>
+        <value enum="7" description="AUCTION"/>
+        <value enum="100" description="FOREIGN"/>
+        <value enum="102" description="BULK"/>
+    </field>
+
+    <field number="30004" name="OrderSource" type="STRING"/>
+
+    <field number="30005" name="ConvertedYield" type="PERCENTAGE"/>
+
+ </fields>
 </fix>

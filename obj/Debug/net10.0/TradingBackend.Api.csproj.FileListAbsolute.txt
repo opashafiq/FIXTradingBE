@@ -40,3 +40,5 @@ D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.
 D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\fix-uat.cfg
 D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\dictionaries\FIX50SP2.xml
 D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\dictionaries\FIXT11.xml
+D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\dictionaries\CHSE_FIX50SP2.xml
+D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\obj\Debug\net10.0\TradingBackend.Api.sourcelink.json
