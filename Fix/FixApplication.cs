@@ -1,23 +1,35 @@
 using Microsoft.Extensions.Logging;
 using QuickFix;
 using QuickFix.Fields;
+using Microsoft.AspNetCore.SignalR;
+using TradingBackend.Api.Hubs;
 
 namespace TradingBackend.Api.Fix;
 
 public class FixApplication : IApplication
 {
     private readonly ILogger<FixApplication> _logger;
+    private readonly IHubContext<FixStatusHub> _hubContext;
+    private readonly FixMessageDispatcher _dispatcher;
+    private readonly IIncomingFixMessageQueue _messageQueue;
+
     private volatile bool _isLoggedOn;
     private string? _sessionId;
 
     public bool IsLoggedOn => _isLoggedOn;
     public string? SessionId => _sessionId;
 
-    public FixApplication(ILogger<FixApplication> logger)
-    {
-        _logger = logger;
-    }
-
+public FixApplication(
+    ILogger<FixApplication> logger,
+    IHubContext<FixStatusHub> hubContext,
+    FixMessageDispatcher dispatcher,
+    IIncomingFixMessageQueue messageQueue)
+{
+    _logger = logger;
+    _hubContext = hubContext;
+    _dispatcher = dispatcher;
+    _messageQueue = messageQueue;
+}
     public void OnCreate(SessionID sessionId)
     {
         _logger.LogInformation(
@@ -28,8 +40,12 @@ public class FixApplication : IApplication
     {
         _sessionId = sessionId.ToString();
         _isLoggedOn = true;
+
         _logger.LogInformation(
-            "Successfully logged on to FIX session: {SessionId}", sessionId);
+            "Successfully logged on to FIX session: {SessionId}",
+            sessionId);
+
+        _ = BroadcastConnectionStatusAsync();
     }
 
     public void OnLogout(SessionID sessionId)
@@ -37,6 +53,8 @@ public class FixApplication : IApplication
         _isLoggedOn = false;
         _logger.LogWarning(
             "FIX session logged out: {SessionId}", sessionId);
+
+        _ = BroadcastConnectionStatusAsync();
     }
 
     public void FromAdmin(Message message, SessionID sessionId)
@@ -74,17 +92,59 @@ public void ToAdmin(Message message, SessionID sessionId)
 
     public void FromApp(Message message, SessionID sessionId)
     {
-        _logger.LogInformation(
-            "Application message received from CHSE. Session: {SessionId}",
-            sessionId);
+        try
+        {
+            string msgType = message.Header.GetString(Tags.MsgType);
 
-        // We will process order acknowledgements,
-        // executions and other application messages here.
+            var incomingMessage = new IncomingFixMessage
+            {
+                SessionId = sessionId.ToString(),
+                MsgType = msgType,
+                RawMessage = message.ToString(),
+                ReceivedAtUtc = DateTimeOffset.UtcNow
+            };
+
+            // Queue the raw message for database persistence.
+            _messageQueue
+                .EnqueueAsync(incomingMessage)
+                .AsTask()
+                .GetAwaiter()
+                .GetResult();
+
+            // Invoke the appropriate FIX message handler.
+            _dispatcher.Dispatch(message, sessionId);
+
+            _logger.LogInformation(
+                "Incoming FIX message queued and dispatched. MsgType: {MsgType}, Session: {SessionId}",
+                msgType,
+                sessionId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to process incoming FIX message. Session: {SessionId}",
+                sessionId);
+
+            throw;
+        }
     }
 
     public void ToApp(Message message, SessionID sessionId)
     {
         // Outgoing application messages:
         // NewOrderSingle, OrderCancelRequest, etc.
+    }
+
+    private async Task BroadcastConnectionStatusAsync()
+    {
+        await _hubContext.Clients.All.SendAsync(
+            "FixConnectionStatusChanged",
+            new
+            {
+                Connected = IsLoggedOn,
+                SessionId = SessionId
+            }
+        );
     }
 }
