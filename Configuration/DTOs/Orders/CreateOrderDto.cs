@@ -25,4 +25,5 @@ public class CreateOrderDto
     public int? AccountType { get; set; }
 
     public string? OrderSource { get; set; }
+    public decimal? StopPx { get; set; }
 }

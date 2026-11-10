@@ -31,6 +31,7 @@ public class TradingOrder
     public string? Account { get; set; }
     public int? AccountType { get; set; }
     public string? OrderSource { get; set; }
+    public decimal? StopPx { get; set; }
 
     // Timestamps
     public DateTimeOffset? TransactTime { get; set; }
@@ -41,4 +42,7 @@ public class TradingOrder
 
     public ICollection<Execution> Executions { get; set; }
     = new List<Execution>();
+
+    public ICollection<OrderIdentifier> Identifiers { get; set; }
+    = new List<OrderIdentifier>();
 }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using QuickFix;
 using QuickFix.Fields;
+using TradingBackend.Api.DTOs.Orders;
 
 namespace TradingBackend.Api.Fix;
 
@@ -18,21 +19,19 @@ public class FixMessageDispatcher
         _executionReportParser = executionReportParser;
     }
 
-    public void Dispatch(Message message, SessionID sessionId)
+    public ExecutionReportDto? Dispatch(Message message, SessionID sessionId)
     {
         string msgType = message.Header.GetString(Tags.MsgType);
 
         _logger.LogInformation(
             "Incoming FIX message. MsgType: {MsgType}, Session: {SessionId}",
             msgType,
-            sessionId
-        );
+            sessionId);
 
         switch (msgType)
         {
             case "8":
-                HandleExecutionReport(message, sessionId);
-                break;
+                return HandleExecutionReport(message, sessionId);
 
             case "9":
                 HandleOrderCancelReject(message, sessionId);
@@ -57,75 +56,42 @@ public class FixMessageDispatcher
             default:
                 _logger.LogInformation(
                     "No specific handler registered for FIX MsgType: {MsgType}",
-                    msgType
-                );
+                    msgType);
                 break;
         }
+
+        return null;
     }
 
 
-private void HandleExecutionReport(
-    Message message,
-    SessionID sessionId)
-{
-    try
+    private ExecutionReportDto HandleExecutionReport(
+        Message message,
+        SessionID sessionId)
     {
-        var report = _executionReportParser.Parse(
-            message,
-            sessionId);
+        try
+        {
+            var report = _executionReportParser.Parse(message, sessionId);
 
-        _logger.LogInformation(
-            """
-            CHSE ExecutionReport Parsed
-            Session: {SessionId}
-            ApplID: {ApplID}
-            ExecID: {ExecID}
-            ClOrdID: {ClOrdID}
-            OrderID: {OrderID}
-            ExecType: {ExecType}
-            OrdStatus: {OrdStatus}
-            Symbol: {Symbol}
-            Side: {Side}
-            OrderQty: {OrderQty}
-            LastQty: {LastQty}
-            LastPx: {LastPx}
-            LeavesQty: {LeavesQty}
-            CumQty: {CumQty}
-            AvgPx: {AvgPx}
-            OrderBook: {OrderBook}
-            OrderSource: {OrderSource}
-            TransactTime: {TransactTime}
-            """,
-            report.SessionId,
-            report.ApplId,
-            report.ExecId,
-            report.ClOrdId,
-            report.OrderId,
-            report.ExecType,
-            report.OrdStatus,
-            report.Symbol,
-            report.Side,
-            report.OrderQty,
-            report.LastQty,
-            report.LastPx,
-            report.LeavesQty,
-            report.CumQty,
-            report.AvgPx,
-            report.OrderBook,
-            report.OrderSource,
-            report.TransactTime
-        );
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(
-            ex,
-            "Failed to parse CHSE ExecutionReport. Session: {SessionId}",
-            sessionId);
+            _logger.LogInformation(
+                "ExecutionReport parsed. ExecID: {ExecId}, ClOrdID: {ClOrdId}, " +
+                "ExecType: {ExecType}, OrdStatus: {OrdStatus}",
+                report.ExecId,
+                report.ClOrdId,
+                report.ExecType,
+                report.OrdStatus);
 
-        throw;
+            return report;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to parse CHSE ExecutionReport. Session: {SessionId}",
+                sessionId);
+
+            throw;
+        }
     }
-}
 
 private static string? ReadField(Message message, int tag)
 {

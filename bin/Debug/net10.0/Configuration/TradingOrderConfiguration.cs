@@ -25,6 +25,8 @@ public class TradingOrderConfiguration
             .HasMaxLength(1)
             .IsRequired();
 
+        entity.Property(x => x.StopPx).HasPrecision(20, 8);
+
         entity.Property(x => x.OrdStatus).HasMaxLength(32);
 
         entity.Property(x => x.OrderQty)

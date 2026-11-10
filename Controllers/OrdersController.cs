@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TradingBackend.Api.Data;
 using TradingBackend.Api.DTOs.Orders;
 using TradingBackend.Api.Entities;
+using TradingBackend.Api.Configuration;
 
 namespace TradingBackend.Api.Controllers;
 
@@ -95,6 +96,14 @@ public class OrdersController : ControllerBase
     public async Task<ActionResult<OrderResponseDto>> CreateOrder(
         CreateOrderDto dto)
     {
+        if (!OrderSourceConstants.IsValid(dto.OrderSource))
+        {
+            return BadRequest(new
+            {
+                Message = $"Invalid OrderSource '{dto.OrderSource}'.",
+                AllowedValues = OrderSourceConstants.ValidValues
+            });
+        }
         var order = new TradingOrder
         {
             ClOrdId = dto.ClOrdId,
@@ -111,12 +120,32 @@ public class OrdersController : ControllerBase
             OrigClOrdId = dto.OrigClOrdId,
             OrdStatus = "PendingNew",
             LeavesQty = dto.OrderQty,
-            CumQty = 0
+            CumQty = 0,
+            StopPx = dto.StopPx
         };
+
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync();
 
         _dbContext.Orders.Add(order);
 
         await _dbContext.SaveChangesAsync();
+
+        // Register the initial FIX client order identifier.
+        var orderIdentifier = new OrderIdentifier
+        {
+            TradingOrderId = order.Id,
+            SessionId = order.SessionId,
+            ClOrdId = order.ClOrdId,
+            OrigClOrdId = order.OrigClOrdId,
+            CreatedAtUtc = DateTimeOffset.UtcNow
+        };
+
+        _dbContext.OrderIdentifiers.Add(orderIdentifier);
+
+        await _dbContext.SaveChangesAsync();
+
+        await transaction.CommitAsync();
 
         var response = new OrderResponseDto
         {

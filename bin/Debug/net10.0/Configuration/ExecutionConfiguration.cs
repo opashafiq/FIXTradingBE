@@ -61,6 +61,35 @@ public class ExecutionConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         entity.HasIndex(x => x.TradingOrderId);
-        
+
+        entity.Property(x => x.MdEntryId)
+    .HasMaxLength(128);
+
+    entity.Property(x => x.OrderCapacity)
+        .HasMaxLength(1);
+
+    entity.Property(x => x.TrdMatchId)
+        .HasMaxLength(128);
+
+    entity.Property(x => x.SecondaryTradeId)
+        .HasMaxLength(128);
+
+    entity.Property(x => x.ExecRestatementReason)
+        .HasMaxLength(10);
+
+    entity.Property(x => x.OrdRejReason)
+        .HasMaxLength(10);
+
+    entity.Property(x => x.EventCategory)
+    .HasMaxLength(20)
+    .IsRequired();        
+            
+    entity.HasOne(x => x.ReferencedExecution)
+        .WithMany(x => x.RelatedExecutions)
+        .HasForeignKey(x => x.ReferencedExecutionId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    entity.HasIndex(x => x.ReferencedExecutionId);
+
     }
 }

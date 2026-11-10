@@ -37,4 +37,22 @@ public class Execution
     // Audit
     public DateTimeOffset CreatedAtUtc { get; set; } =
         DateTimeOffset.UtcNow;
+
+    public string? MdEntryId { get; set; }
+    public string? OrderCapacity { get; set; }
+
+    public string? TrdMatchId { get; set; }
+    public string? SecondaryTradeId { get; set; }
+
+    public string? ExecRestatementReason { get; set; }
+    public string? OrdRejReason { get; set; }
+
+    public string EventCategory { get; set; } = "OTHER";
+
+    public long? ReferencedExecutionId { get; set; }
+
+    public Execution? ReferencedExecution { get; set; }
+
+    public ICollection<Execution> RelatedExecutions { get; set; }
+        = new List<Execution>();
 }

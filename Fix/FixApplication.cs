@@ -10,24 +10,24 @@ public class FixApplication : IApplication
 {
     private readonly ILogger<FixApplication> _logger;
     private readonly IHubContext<FixStatusHub> _hubContext;
-    private readonly FixMessageDispatcher _dispatcher;
     private readonly IIncomingFixMessageQueue _messageQueue;
 
     private volatile bool _isLoggedOn;
     private string? _sessionId;
-
     public bool IsLoggedOn => _isLoggedOn;
     public string? SessionId => _sessionId;
+
+    public SessionID? ActiveSession { get; private set; }
+
+    
 
 public FixApplication(
     ILogger<FixApplication> logger,
     IHubContext<FixStatusHub> hubContext,
-    FixMessageDispatcher dispatcher,
     IIncomingFixMessageQueue messageQueue)
 {
     _logger = logger;
     _hubContext = hubContext;
-    _dispatcher = dispatcher;
     _messageQueue = messageQueue;
 }
     public void OnCreate(SessionID sessionId)
@@ -36,26 +36,31 @@ public FixApplication(
             "FIX session created: {SessionId}", sessionId);
     }
 
-    public void OnLogon(SessionID sessionId)
-    {
-        _sessionId = sessionId.ToString();
-        _isLoggedOn = true;
+public void OnLogon(SessionID sessionId)
+{
+    ActiveSession = sessionId;
+    _isLoggedOn = true;
+    _sessionId = sessionId.ToString();
 
-        _logger.LogInformation(
-            "Successfully logged on to FIX session: {SessionId}",
-            sessionId);
+    _logger.LogInformation(
+        "Successfully logged on to FIX session: {SessionId}",
+        _sessionId);
 
-        _ = BroadcastConnectionStatusAsync();
-    }
+    _ = BroadcastConnectionStatusAsync();
+}
 
     public void OnLogout(SessionID sessionId)
-    {
-        _isLoggedOn = false;
-        _logger.LogWarning(
-            "FIX session logged out: {SessionId}", sessionId);
+{
+    ActiveSession = null;
+    _isLoggedOn = false;
+    _sessionId = null;
 
-        _ = BroadcastConnectionStatusAsync();
-    }
+    _logger.LogWarning(
+        "FIX session logged out: {SessionId}",
+        sessionId);
+
+    _ = BroadcastConnectionStatusAsync();
+}
 
     public void FromAdmin(Message message, SessionID sessionId)
     {
@@ -96,26 +101,42 @@ public void ToAdmin(Message message, SessionID sessionId)
         {
             string msgType = message.Header.GetString(Tags.MsgType);
 
-            var incomingMessage = new IncomingFixMessage
-            {
-                SessionId = sessionId.ToString(),
-                MsgType = msgType,
-                RawMessage = message.ToString(),
-                ReceivedAtUtc = DateTimeOffset.UtcNow
-            };
+        var incomingMessage = new IncomingFixMessage
+        {
+            SessionId = sessionId.ToString(),
 
-            // Queue the raw message for database persistence.
+            BeginString = sessionId.BeginString,
+            SenderCompID = sessionId.SenderCompID,
+            TargetCompID = sessionId.TargetCompID,
+            SessionQualifier = sessionId.SessionQualifier ?? string.Empty,
+
+            MsgType = msgType,
+            RawMessage = message.ToString(),
+            ReceivedAtUtc = DateTimeOffset.UtcNow,
+            MsgSeqNum = message.Header.GetInt(Tags.MsgSeqNum),
+
+            PossDupFlag = message.Header.IsSetField(Tags.PossDupFlag)
+                && message.Header.GetBoolean(Tags.PossDupFlag),
+
+            PossResend = message.Header.IsSetField(Tags.PossResend)
+                && message.Header.GetBoolean(Tags.PossResend),
+
+            SendingTime = message.Header.GetString(Tags.SendingTime),
+
+            OrigSendingTime = message.Header.IsSetField(Tags.OrigSendingTime)
+                ? message.Header.GetString(Tags.OrigSendingTime)
+                : null,            
+        };
+
+            // Queue the message for background processing.
             _messageQueue
                 .EnqueueAsync(incomingMessage)
                 .AsTask()
                 .GetAwaiter()
                 .GetResult();
 
-            // Invoke the appropriate FIX message handler.
-            _dispatcher.Dispatch(message, sessionId);
-
             _logger.LogInformation(
-                "Incoming FIX message queued and dispatched. MsgType: {MsgType}, Session: {SessionId}",
+                "Incoming FIX message queued. MsgType: {MsgType}, Session: {SessionId}",
                 msgType,
                 sessionId);
         }
@@ -123,7 +144,7 @@ public void ToAdmin(Message message, SessionID sessionId)
         {
             _logger.LogError(
                 ex,
-                "Failed to process incoming FIX message. Session: {SessionId}",
+                "Failed to queue incoming FIX message. Session: {SessionId}",
                 sessionId);
 
             throw;
@@ -147,4 +168,27 @@ public void ToAdmin(Message message, SessionID sessionId)
             }
         );
     }
+
+    public void SendToExchange(Message message)
+{
+    var sessionId = ActiveSession;
+
+    if (!_isLoggedOn || sessionId == null)
+    {
+        throw new InvalidOperationException(
+            "Cannot send FIX message. CHSE FIX session is not logged on.");
+    }
+
+    bool sent = Session.SendToTarget(message, sessionId);
+
+    if (!sent)
+    {
+        throw new InvalidOperationException(
+            $"QuickFIX/n could not send the message to session {sessionId}.");
+    }
+
+    _logger.LogInformation(
+        "Outgoing FIX message submitted to session {SessionId}.",
+        sessionId);
+}
 }

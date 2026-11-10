@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TradingBackend.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9544256d7146abd39cd9b18d7ddeb73776ac6930")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a2062e27c25150116b362cf2f601a1993d69c25d")]
 [assembly: System.Reflection.AssemblyProductAttribute("TradingBackend.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TradingBackend.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

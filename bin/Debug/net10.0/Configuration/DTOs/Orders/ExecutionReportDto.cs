@@ -31,4 +31,23 @@ public class ExecutionReportDto
 
     public string? ExecRefId { get; set; }
     public string? Text { get; set; }
+
+
+    public string? MdEntryId { get; set; }
+    public string? OrderCapacity { get; set; }
+
+    public string? TrdMatchId { get; set; }
+    public string? SecondaryTradeId { get; set; }
+    public string? ExecRestatementReason { get; set; }
+    public string? OrdRejReason { get; set; }
+
+    public string? OrdType { get; set; }
+
+    public string? Account { get; set; }
+    public int? AccountType { get; set; }
+
+    public decimal? Yield { get; set; }
+    public decimal? ConvertedYield { get; set; }
+
+    public string? StreamText { get; set; }
 }
