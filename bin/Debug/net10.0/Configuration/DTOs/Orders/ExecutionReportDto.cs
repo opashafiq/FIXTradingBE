@@ -38,6 +38,8 @@ public class ExecutionReportDto
 
     public string? TrdMatchId { get; set; }
     public string? SecondaryTradeId { get; set; }
+    public string? MultiLegReportingType { get; set; }
+    public string? SecondaryOrderId { get; set; }
     public string? ExecRestatementReason { get; set; }
     public string? OrdRejReason { get; set; }
 

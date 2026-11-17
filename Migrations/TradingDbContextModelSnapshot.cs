@@ -154,6 +154,60 @@ namespace TradingBackend.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("TradingBackend.Api.Entities.BusinessMessageRejectRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("BusinessRejectReason")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BusinessRejectRefID")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<long>("FixMessageLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("ReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RefMsgType")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<int?>("RefSeqNum")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RefTagID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("TradingOrderId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FixMessageLogId")
+                        .IsUnique();
+
+                    b.HasIndex("TradingOrderId");
+
+                    b.HasIndex("SessionId", "RefSeqNum", "RefMsgType");
+
+                    b.ToTable("business_message_rejects", (string)null);
+                });
+
             modelBuilder.Entity("TradingBackend.Api.Entities.Execution", b =>
                 {
                     b.Property<long>("Id")
@@ -167,7 +221,8 @@ namespace TradingBackend.Api.Migrations
                         .HasColumnType("numeric(20,8)");
 
                     b.Property<string>("ClOrdId")
-                        .HasColumnType("text");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -182,7 +237,8 @@ namespace TradingBackend.Api.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.Property<string>("ExchangeOrderId")
-                        .HasColumnType("text");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("ExecId")
                         .IsRequired()
@@ -190,7 +246,8 @@ namespace TradingBackend.Api.Migrations
                         .HasColumnType("character varying(128)");
 
                     b.Property<string>("ExecRefId")
-                        .HasColumnType("text");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("ExecRestatementReason")
                         .HasMaxLength(10)
@@ -366,6 +423,9 @@ namespace TradingBackend.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<Guid?>("ProcessingToken")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("RawMessage")
                         .IsRequired()
                         .HasColumnType("text");
@@ -415,6 +475,119 @@ namespace TradingBackend.Api.Migrations
                     b.ToTable("fix_message_logs", (string)null);
                 });
 
+            modelBuilder.Entity("TradingBackend.Api.Entities.OrderCancelReject", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ClOrdId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int?>("CxlRejReason")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CxlRejResponseTo")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("FixMessageLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("OrdStatus")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<string>("OrderId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("OrigClOrdId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("ReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("TradingOrderId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FixMessageLogId")
+                        .IsUnique();
+
+                    b.HasIndex("TradingOrderId");
+
+                    b.HasIndex("SessionId", "ClOrdId");
+
+                    b.ToTable("order_cancel_rejects", (string)null);
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.OrderCancellationRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ClOrdId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OrigClOrdId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("SubmissionError")
+                        .HasColumnType("text");
+
+                    b.Property<long>("TradingOrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TradingOrderId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_order_cancellation_requests_TradingOrderId_Active")
+                        .HasFilter("\"Status\" IN ('PendingSubmission', 'SubmittedToFix', 'SubmissionUnknown')");
+
+                    b.HasIndex("SessionId", "ClOrdId")
+                        .IsUnique();
+
+                    b.HasIndex("TradingOrderId", "Status");
+
+                    b.ToTable("order_cancellation_requests", (string)null);
+                });
+
             modelBuilder.Entity("TradingBackend.Api.Entities.OrderIdentifier", b =>
                 {
                     b.Property<long>("Id")
@@ -452,6 +625,80 @@ namespace TradingBackend.Api.Migrations
                     b.ToTable("order_identifiers", (string)null);
                 });
 
+            modelBuilder.Entity("TradingBackend.Api.Entities.OrderReplacementRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ClOrdId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpireDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("OrderQty")
+                        .HasPrecision(20, 6)
+                        .HasColumnType("numeric(20,6)");
+
+                    b.Property<string>("OrigClOrdId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<decimal?>("Price")
+                        .HasPrecision(20, 8)
+                        .HasColumnType("numeric(20,8)");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<decimal?>("StopPx")
+                        .HasPrecision(20, 8)
+                        .HasColumnType("numeric(20,8)");
+
+                    b.Property<string>("SubmissionError")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TimeInForce")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<long>("TradingOrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TradingOrderId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_order_replacement_requests_TradingOrderId_Active")
+                        .HasFilter("\"Status\" IN ('PendingSubmission', 'SubmittedToFix', 'SubmissionUnknown', 'PendingReplace')");
+
+                    b.HasIndex("SessionId", "ClOrdId")
+                        .IsUnique();
+
+                    b.HasIndex("TradingOrderId", "Status");
+
+                    b.ToTable("order_replacement_requests", (string)null);
+                });
+
             modelBuilder.Entity("TradingBackend.Api.Entities.TradingOrder", b =>
                 {
                     b.Property<long>("Id")
@@ -484,6 +731,12 @@ namespace TradingBackend.Api.Migrations
 
                     b.Property<string>("ExchangeOrderId")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpireDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("FirmId")
+                        .HasColumnType("integer");
 
                     b.Property<decimal?>("LeavesQty")
                         .HasPrecision(20, 6)
@@ -525,6 +778,10 @@ namespace TradingBackend.Api.Migrations
                         .HasPrecision(20, 8)
                         .HasColumnType("numeric(20,8)");
 
+                    b.Property<string>("SubmissionStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Symbol")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -542,6 +799,8 @@ namespace TradingBackend.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ExchangeOrderId");
+
+                    b.HasIndex("FirmId");
 
                     b.HasIndex("Symbol");
 
@@ -681,6 +940,20 @@ namespace TradingBackend.Api.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("TradingBackend.Api.Entities.BusinessMessageRejectRecord", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.FixMessageLog", null)
+                        .WithMany()
+                        .HasForeignKey("FixMessageLogId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TradingBackend.Api.Entities.TradingOrder", null)
+                        .WithMany()
+                        .HasForeignKey("TradingOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("TradingBackend.Api.Entities.Execution", b =>
                 {
                     b.HasOne("TradingBackend.Api.Entities.Execution", "ReferencedExecution")
@@ -698,6 +971,35 @@ namespace TradingBackend.Api.Migrations
                     b.Navigation("TradingOrder");
                 });
 
+            modelBuilder.Entity("TradingBackend.Api.Entities.OrderCancelReject", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.FixMessageLog", "FixMessageLog")
+                        .WithOne()
+                        .HasForeignKey("TradingBackend.Api.Entities.OrderCancelReject", "FixMessageLogId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TradingBackend.Api.Entities.TradingOrder", "TradingOrder")
+                        .WithMany()
+                        .HasForeignKey("TradingOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("FixMessageLog");
+
+                    b.Navigation("TradingOrder");
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.OrderCancellationRequest", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.TradingOrder", "TradingOrder")
+                        .WithMany()
+                        .HasForeignKey("TradingOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TradingOrder");
+                });
+
             modelBuilder.Entity("TradingBackend.Api.Entities.OrderIdentifier", b =>
                 {
                     b.HasOne("TradingBackend.Api.Entities.TradingOrder", "TradingOrder")
@@ -707,6 +1009,27 @@ namespace TradingBackend.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("TradingOrder");
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.OrderReplacementRequest", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.TradingOrder", "TradingOrder")
+                        .WithMany()
+                        .HasForeignKey("TradingOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TradingOrder");
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.TradingOrder", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.Firm", "Firm")
+                        .WithMany()
+                        .HasForeignKey("FirmId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Firm");
                 });
 
             modelBuilder.Entity("TradingBackend.Api.Identity.ApplicationUser", b =>

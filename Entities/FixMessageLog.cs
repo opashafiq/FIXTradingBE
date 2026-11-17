@@ -45,6 +45,7 @@ public class FixMessageLog
 
     public string? OrigSendingTime { get; set; }
     public DateTimeOffset? ProcessingStartedAtUtc { get; set; }
+    public Guid? ProcessingToken { get; set; }
 
     // Timestamp
     public DateTimeOffset ReceivedAtUtc { get; set; } =

@@ -59,6 +59,13 @@ public class ExecutionConfiguration
             .WithMany(x => x.Executions)
             .HasForeignKey(x => x.TradingOrderId)
             .OnDelete(DeleteBehavior.Restrict);
+        // One quote entry revision can have multiple execution events
+        entity.HasOne(x => x.QuoteEntryRevision)
+            .WithMany()
+            .HasForeignKey(x => x.QuoteEntryRevisionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasIndex(x => x.QuoteEntryRevisionId);
 
         entity.HasIndex(x => x.TradingOrderId);
 
@@ -82,7 +89,16 @@ public class ExecutionConfiguration
 
     entity.Property(x => x.EventCategory)
     .HasMaxLength(20)
-    .IsRequired();        
+    .IsRequired(); 
+
+    entity.Property(x => x.ExecRefId)
+    .HasMaxLength(128);
+
+    entity.Property(x => x.ClOrdId)
+        .HasMaxLength(128);
+
+    entity.Property(x => x.ExchangeOrderId)
+        .HasMaxLength(128);       
             
     entity.HasOne(x => x.ReferencedExecution)
         .WithMany(x => x.RelatedExecutions)

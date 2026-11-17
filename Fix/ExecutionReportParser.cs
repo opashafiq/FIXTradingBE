@@ -44,6 +44,8 @@ public class ExecutionReportParser
         ExecRefId = ReadString(message, 19),
         TrdMatchId = ReadString(message, 880),
         SecondaryTradeId = ReadString(message, 1040),
+        MultiLegReportingType = ReadString(message, 442),
+        SecondaryOrderId = ReadString(message, 198),    
         ExecRestatementReason = ReadString(message, 378),
         OrdRejReason = ReadString(message, 103),
 
@@ -84,7 +86,8 @@ public class ExecutionReportParser
 
         return decimal.TryParse(
             value,
-            NumberStyles.Number,
+            NumberStyles.AllowLeadingSign |
+            NumberStyles.AllowDecimalPoint,
             CultureInfo.InvariantCulture,
             out var result)
             ? result
@@ -187,7 +190,9 @@ public class ExecutionReportParser
         Require(report.ExecRefId, nameof(report.ExecRefId));
     }
 
-    if (execType == "D")
+    if (execType == "D" ||
+        (execType == "4" &&
+        string.IsNullOrWhiteSpace(report.OrigClOrdId)))
     {
         Require(
             report.ExecRestatementReason,

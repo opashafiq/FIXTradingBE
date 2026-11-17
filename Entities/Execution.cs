@@ -31,6 +31,10 @@ public class Execution
 
     // Relationship with TradingOrder
     public long? TradingOrderId { get; set; }
+    // Relationship with Quote Entry Revision
+    public long? QuoteEntryRevisionId { get; set; }
+
+    public QuoteEntryRevision? QuoteEntryRevision { get; set; }
 
     public TradingOrder? TradingOrder { get; set; }
 

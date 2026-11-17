@@ -44,6 +44,13 @@ public class TradingOrderConfiguration
         entity.Property(x => x.AvgPx)
             .HasPrecision(20, 8);
 
+        entity.HasOne(x => x.Firm)
+            .WithMany()
+            .HasForeignKey(x => x.FirmId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasIndex(x => x.FirmId);
+
         entity.HasIndex(x => x.ExchangeOrderId);
 
         entity.HasIndex(x => x.Symbol);

@@ -50,13 +50,15 @@ public class FixMessageRecoveryWorker : BackgroundService
         }
     }
 
-    private async Task RecoverMessagesAsync(
+    
+
+private async Task RecoverMessagesAsync(
     CancellationToken cancellationToken)
 {
     const int batchSize = 20;
     const int maxAttempts = 5;
 
-    // First, find messages that are eligible for retry.
+    // Step 1: Find messages eligible for retry.
     List<long> candidateIds;
 
     await using (var scope = _scopeFactory.CreateAsyncScope())
@@ -84,6 +86,7 @@ public class FixMessageRecoveryWorker : BackgroundService
             .ToListAsync(cancellationToken);
     }
 
+    // Step 2: Process each eligible message.
     foreach (long logId in candidateIds)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -93,8 +96,9 @@ public class FixMessageRecoveryWorker : BackgroundService
         var dbContext = scope.ServiceProvider
             .GetRequiredService<TradingDbContext>();
 
-        // Atomically claim the message.
-        // Another worker cannot claim it after its status changes.
+        var processingToken = Guid.NewGuid();
+
+        // Step 3: Atomically claim the message.
         int claimed = await dbContext.FixMessageLogs
             .Where(x =>
                 x.Id == logId &&
@@ -104,10 +108,21 @@ public class FixMessageRecoveryWorker : BackgroundService
                 x.NextRetryAtUtc != null &&
                 x.NextRetryAtUtc <= DateTimeOffset.UtcNow)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(x => x.ProcessingStatus, "PROCESSING")
-                .SetProperty(x => x.ProcessingError, (string?)null)
-                .SetProperty(x => x.NextRetryAtUtc, (DateTimeOffset?)null)
-                .SetProperty(x => x.ProcessingStartedAtUtc,DateTimeOffset.UtcNow),
+                .SetProperty(
+                    x => x.ProcessingStatus,
+                    "PROCESSING")
+                .SetProperty(
+                    x => x.ProcessingError,
+                    (string?)null)
+                .SetProperty(
+                    x => x.NextRetryAtUtc,
+                    (DateTimeOffset?)null)
+                .SetProperty(
+                    x => x.ProcessingStartedAtUtc,
+                    DateTimeOffset.UtcNow)
+                .SetProperty(
+                    x => x.ProcessingToken,
+                    (Guid?)processingToken),
                 cancellationToken);
 
         // Another worker may already have claimed this message.
@@ -118,56 +133,37 @@ public class FixMessageRecoveryWorker : BackgroundService
             "Recovering FIX message. LogId: {LogId}",
             logId);
 
-        var processor = scope.ServiceProvider
-            .GetRequiredService<FixMessageProcessor>();
-
-        try
-        {
-            await processor.ProcessAsync(logId, cancellationToken);
-
-            await processor.UpdateMessageStatusAsync(
-                logId,
-                "PROCESSED",
-                null,
-                cancellationToken);
-
-            _logger.LogInformation(
-                "FIX message recovery successful. LogId: {LogId}",
-                logId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "FIX message recovery failed. LogId: {LogId}",
-                logId);
-
-            try
-            {
-                await processor.UpdateMessageStatusAsync(
-                    logId,
-                    "FAILED",
-                    ex.Message,
-                    cancellationToken);
-            }
-            catch (Exception statusException)
-            {
-                _logger.LogError(
-                    statusException,
-                    "Could not update recovery status. LogId: {LogId}",
-                    logId);
-            }
-        }
+        // Step 4: Process the claimed message.
+        await ProcessClaimedMessageAsync(
+            logId,
+            processingToken,
+            cancellationToken);
     }
 }
 
+
+
+
+
+
 private async Task ProcessClaimedMessageAsync(
     long logId,
+    Guid processingToken,
     CancellationToken cancellationToken)
 {
     string? processingError = null;
+    bool leaseLost = false;
 
-    // Process the message in its own dependency-injection scope.
+    using var processingCts =
+        CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken);
+
+    // Start the lease heartbeat.
+    Task<bool> heartbeatTask = RenewProcessingLeaseAsync(
+        logId,
+        processingToken,
+        processingCts);
+
     try
     {
         await using var processingScope =
@@ -176,7 +172,29 @@ private async Task ProcessClaimedMessageAsync(
         var processor = processingScope.ServiceProvider
             .GetRequiredService<FixMessageProcessor>();
 
-        await processor.ProcessAsync(logId, cancellationToken);
+        await processor.ProcessAsync(
+            logId,
+            processingToken,
+            processingCts.Token);
+    }
+    catch (OperationCanceledException)
+        when (cancellationToken.IsCancellationRequested)
+    {
+        processingError =
+            "Processing cancelled because the application is shutting down.";
+
+        _logger.LogWarning(
+            "FIX message recovery cancelled. LogId: {LogId}",
+            logId);
+    }
+    catch (OperationCanceledException)
+        when (processingCts.IsCancellationRequested)
+    {
+        leaseLost = true;
+
+        _logger.LogWarning(
+            "FIX message recovery stopped because its processing lease was lost. LogId: {LogId}",
+            logId);
     }
     catch (Exception ex)
     {
@@ -184,33 +202,90 @@ private async Task ProcessClaimedMessageAsync(
 
         _logger.LogError(
             ex,
-            "Failed to recover FIX message. LogId: {LogId}",
+            "FIX message recovery failed. LogId: {LogId}",
             logId);
     }
+    finally
+    {
+        // Stop the heartbeat and wait for it to finish.
+        processingCts.Cancel();
 
-    // Update the status using a fresh scope.
+        try
+        {
+            leaseLost |= await heartbeatTask;
+        }
+        catch (Exception ex)
+        {
+            leaseLost = true;
+
+            _logger.LogError(
+                ex,
+                "Error stopping FIX message heartbeat. LogId: {LogId}",
+                logId);
+        }
+    }
+
+    // Do not update status if this worker no longer owns the message.
+    if (leaseLost)
+    {
+        _logger.LogWarning(
+            "Skipping recovery status update because the processing lease was lost. LogId: {LogId}",
+            logId);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return;
+    }
+
+    // During application shutdown, make a best effort to persist status.
+    var statusCancellationToken =
+        cancellationToken.IsCancellationRequested
+            ? CancellationToken.None
+            : cancellationToken;
+
     try
     {
-        await using var statusScope =
-            _scopeFactory.CreateAsyncScope();
-
-        var processor = statusScope.ServiceProvider
-            .GetRequiredService<FixMessageProcessor>();
-
-        await processor.UpdateMessageStatusAsync(
+        await UpdateRecoveryStatusAsync(
             logId,
+            processingToken,
             processingError == null ? "PROCESSED" : "FAILED",
             processingError,
-            cancellationToken);
+            statusCancellationToken);
     }
     catch (Exception ex)
     {
         _logger.LogError(
             ex,
-            "Could not update recovered FIX message status. LogId: {LogId}",
+            "Could not update recovery status. LogId: {LogId}",
             logId);
     }
+
+    cancellationToken.ThrowIfCancellationRequested();
 }
+
+
+
+private async Task UpdateRecoveryStatusAsync(
+    long logId,
+    Guid processingToken,
+    string status,
+    string? processingError,
+    CancellationToken cancellationToken)
+{
+    await using var statusScope =
+        _scopeFactory.CreateAsyncScope();
+
+    var processor = statusScope.ServiceProvider
+        .GetRequiredService<FixMessageProcessor>();
+
+    await processor.UpdateMessageStatusAsync(
+        logId,
+        status,
+        processingError,
+        processingToken,
+        cancellationToken);
+}
+
+
 
 private async Task RecoverStaleMessagesAsync(
     CancellationToken cancellationToken)
@@ -218,7 +293,9 @@ private async Task RecoverStaleMessagesAsync(
     const int maxAttempts = 5;
 
     var now = DateTimeOffset.UtcNow;
-    var staleThreshold = now.AddMinutes(-10);
+
+    // Allow sufficient time for normal message processing.
+    var staleThreshold = now.AddMinutes(-30);
 
     await using var scope = _scopeFactory.CreateAsyncScope();
 
@@ -232,10 +309,14 @@ private async Task RecoverStaleMessagesAsync(
             x.ProcessingStartedAtUtc != null &&
             x.ProcessingStartedAtUtc < staleThreshold)
         .ExecuteUpdateAsync(setters => setters
-            .SetProperty(x => x.ProcessingStatus, "FAILED")
+            .SetProperty(
+                x => x.ProcessingStatus,
+                "FAILED")
             .SetProperty(
                 x => x.RetryCount,
-                x => x.RetryCount + 1)
+                x => x.RetryCount < maxAttempts
+                    ? x.RetryCount + 1
+                    : maxAttempts)
             .SetProperty(
                 x => x.ProcessingError,
                 "Processing timeout. Message marked for recovery.")
@@ -246,7 +327,10 @@ private async Task RecoverStaleMessagesAsync(
                 x => x.NextRetryAtUtc,
                 x => x.RetryCount + 1 < maxAttempts
                     ? now
-                    : (DateTimeOffset?)null),
+                    : (DateTimeOffset?)null)
+            .SetProperty(
+                x => x.ProcessingToken,
+                (Guid?)null),
             cancellationToken);
 
     if (affectedRows > 0)
@@ -256,5 +340,78 @@ private async Task RecoverStaleMessagesAsync(
             affectedRows);
     }
 }
+
+
+
+private async Task<bool> RenewProcessingLeaseAsync(
+    long logId,
+    Guid processingToken,
+    CancellationTokenSource processingCts)
+{
+    using var timer = new PeriodicTimer(
+        TimeSpan.FromMinutes(5));
+
+    try
+    {
+        while (await timer.WaitForNextTickAsync(
+            processingCts.Token))
+        {
+            await using var scope =
+                _scopeFactory.CreateAsyncScope();
+
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<TradingDbContext>();
+
+            var now = DateTimeOffset.UtcNow;
+
+            int affectedRows = await dbContext.FixMessageLogs
+                .Where(x =>
+                    x.Id == logId &&
+                    x.ProcessingStatus == "PROCESSING" &&
+                    x.ProcessingToken == processingToken)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(
+                        x => x.ProcessingStartedAtUtc,
+                        now),
+                    processingCts.Token);
+
+            if (affectedRows == 0)
+            {
+                _logger.LogWarning(
+                    "FIX message lease lost. LogId: {LogId}",
+                    logId);
+
+                processingCts.Cancel();
+                return true;
+            }
+
+            _logger.LogDebug(
+                "FIX message lease renewed. LogId: {LogId}",
+                logId);
+        }
+
+        return false;
+    }
+    catch (OperationCanceledException)
+        when (processingCts.IsCancellationRequested)
+    {
+        // Normal heartbeat shutdown.
+        return false;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(
+            ex,
+            "FIX message heartbeat failed. LogId: {LogId}",
+            logId);
+
+        // Fail closed if lease renewal cannot be confirmed.
+        processingCts.Cancel();
+        return true;
+    }
+}
+
+
+
 
 }

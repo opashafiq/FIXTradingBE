@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi;
+using TradingBackend.Api.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +86,31 @@ builder.Services
 
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userManager = context.HttpContext.RequestServices
+                    .GetRequiredService<UserManager<ApplicationUser>>();
+
+                var userId = context.Principal?
+                    .FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?
+                    .Value;
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    context.Fail("Invalid authentication token.");
+                    return;
+                }
+
+                var user = await userManager.FindByIdAsync(userId);
+
+                if (user == null || !user.IsActive)
+                {
+                    context.Fail("Your account is inactive or no longer exists.");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -106,7 +133,26 @@ builder.Services.AddOpenApi();
 
 // These two registrations are important
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // JWT Bearer Authentication
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your JWT access token here."
+    });
+
+    // Apply Bearer authentication to API operations
+    options.AddSecurityRequirement(document =>
+        new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        });
+});
 
 builder.Services.AddSingleton<FixMessageDispatcher>();
 builder.Services.AddSingleton<ExecutionReportParser>();
@@ -115,14 +161,27 @@ builder.Services.AddHostedService<FixSessionManager>();
 builder.Services.AddSingleton<
     IIncomingFixMessageQueue,
     IncomingFixMessageQueue>();
+
+builder.Services.AddSingleton<
+    IOutgoingFixMessageQueue,
+    OutgoingFixMessageQueue>();    
 builder.Services.AddHostedService<IncomingFixMessageWorker>();   
 builder.Services.AddScoped<ExecutionReportPersistenceService>(); 
 builder.Services.AddScoped<FixMessageProcessor>();
 builder.Services.AddHostedService<FixMessageRecoveryWorker>();
+builder.Services.AddHostedService<OutgoingFixMessageWorker>();
 builder.Services.AddSingleton<FixOrderSubmissionService>();
 builder.Services.AddHostedService<IdentitySeedHostedService>();
+builder.Services.AddScoped<BusinessMessageRejectPersistenceService>();
+builder.Services.AddScoped<OrderCancelRejectPersistenceService>();
+builder.Services.AddScoped<OrderCancellationService>();
+builder.Services.AddScoped<OrderReplacementService>();
+builder.Services.AddScoped<SessionRejectPersistenceService>();
+
 
 var app = builder.Build();
+
+
 
 // Enable Swagger in Development
 if (app.Environment.IsDevelopment())

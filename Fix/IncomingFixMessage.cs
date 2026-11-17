@@ -13,6 +13,7 @@ public class IncomingFixMessage
     public string SessionQualifier { get; set; } = string.Empty;
 
     public string MsgType { get; set; } = string.Empty;
+    public string? ClOrdId { get; set; }
 
     public string RawMessage { get; set; } = string.Empty;
 

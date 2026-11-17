@@ -33,6 +33,10 @@ public class FixMessageDispatcher
             case "8":
                 return HandleExecutionReport(message, sessionId);
 
+            case "j":
+                // BusinessMessageReject is parsed and persisted by FixMessageProcessor.
+                break;  
+
             case "9":
                 HandleOrderCancelReject(message, sessionId);
                 break;
@@ -145,4 +149,105 @@ private static string? ReadField(Message message, int tag)
             "OrderMassCancelReport received from CHSE."
         );
     }
+
+    
+
+
+    public BusinessMessageRejectDto ParseBusinessMessageReject(
+        Message message,
+        SessionID sessionId)
+    {
+        var reject = new BusinessMessageRejectDto
+        {
+            SessionId = sessionId.ToString(),
+            BusinessRejectRefID = ReadField(message, 379),
+            RefSeqNum = int.TryParse(ReadField(message, 45), out var seqNum)
+                ? seqNum
+                : null,
+            RefMsgType = ReadField(message, 372),
+            RefTagID = int.TryParse(ReadField(message, 371), out var tagId)
+                ? tagId
+                : null,
+            BusinessRejectReason = int.TryParse(
+                ReadField(message, 380),
+                out var reason)
+                    ? reason
+                    : null,
+            Text = ReadField(message, 58)
+        };
+
+        _logger.LogWarning(
+            "BusinessMessageReject parsed. Session: {SessionId}, " +
+            "BusinessRejectRefID: {BusinessRejectRefID}, " +
+            "RefSeqNum: {RefSeqNum}, RefMsgType: {RefMsgType}, " +
+            "RefTagID: {RefTagID}, Reason: {Reason}, Text: {Text}",
+            sessionId,
+            reject.BusinessRejectRefID,
+            reject.RefSeqNum,
+            reject.RefMsgType,
+            reject.RefTagID,
+            reject.BusinessRejectReason,
+            reject.Text);
+
+        return reject;
+    }
+
+    public OrderCancelRejectDto ParseOrderCancelReject(
+        Message message,
+        SessionID sessionId)
+    {
+        return new OrderCancelRejectDto
+        {
+            SessionId = sessionId.ToString(),
+
+            OrderId = ReadField(message, 37),
+            ClOrdId = ReadField(message, 11),
+            OrigClOrdId = ReadField(message, 41),
+            OrdStatus = ReadField(message, 39),
+
+            CxlRejResponseTo = ReadIntField(message, 434),
+            CxlRejReason = ReadIntField(message, 102),
+
+            Text = ReadField(message, 58)
+        };
+    }
+
+public SessionRejectDto ParseSessionReject(
+    Message message,
+    SessionID sessionId)
+{
+    var reject = new SessionRejectDto
+    {
+        SessionId = sessionId.ToString(),
+
+        RefSeqNum = ReadIntField(message, 45),
+        RefTagID = ReadField(message, 371),
+        RefMsgType = ReadField(message, 372),
+        SessionRejectReason = ReadIntField(message, 373),
+        Text = ReadField(message, 58)
+    };
+
+    _logger.LogWarning(
+        "SessionReject parsed. Session: {SessionId}, " +
+        "RefSeqNum: {RefSeqNum}, RefTagID: {RefTagID}, " +
+        "RefMsgType: {RefMsgType}, Reason: {Reason}, Text: {Text}",
+        sessionId,
+        reject.RefSeqNum,
+        reject.RefTagID,
+        reject.RefMsgType,
+        reject.SessionRejectReason,
+        reject.Text);
+
+    return reject;
+}
+
+    private static int? ReadIntField(Message message, int tag)
+    {
+        var value = ReadField(message, tag);
+
+        return int.TryParse(value, out var result)
+            ? result
+            : null;
+    }
+
 }

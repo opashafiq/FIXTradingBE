@@ -24,7 +24,10 @@ public static class NewOrderSingleBuilderTest
             OrderSource = "WEB"
         };
 
-        string preview = service.PreviewNewOrderSingle(dto);
+        string preview = service.PreviewNewOrderSingle(
+        dto,
+        "MFCSL",
+        "MFCSL.DHK08");
 
         Console.WriteLine("========== NEW ORDER SINGLE PREVIEW ==========");
         Console.WriteLine(preview.Replace('\u0001', '|'));

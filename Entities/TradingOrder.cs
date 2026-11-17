@@ -20,6 +20,7 @@ public class TradingOrder
     public decimal OrderQty { get; set; }
     public decimal? Price { get; set; }
     public string? TimeInForce { get; set; }
+    public DateTime? ExpireDate { get; set; }
 
     // Current order status
     public string? OrdStatus { get; set; }
@@ -28,11 +29,15 @@ public class TradingOrder
     public decimal? AvgPx { get; set; }
 
     // Account information
+    public int? FirmId { get; set; }
+    public Firm? Firm { get; set; }
     public string? Account { get; set; }
     public int? AccountType { get; set; }
     public string? OrderSource { get; set; }
     public decimal? StopPx { get; set; }
+    // Firm ownership
 
+    public string SubmissionStatus { get; set; } = "PendingSubmission";
     // Timestamps
     public DateTimeOffset? TransactTime { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; } =
