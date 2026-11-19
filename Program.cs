@@ -157,7 +157,29 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddSingleton<FixMessageDispatcher>();
 builder.Services.AddSingleton<ExecutionReportParser>();
 builder.Services.AddSingleton<FixApplication>();
-builder.Services.AddHostedService<FixSessionManager>();
+
+
+var fixEnabled = builder.Configuration.GetValue(
+    "Fix:Enabled",
+    true);
+
+
+
+if (fixEnabled)
+{
+    builder.Services.AddHostedService<FixSessionManager>();
+    builder.Services.AddHostedService<IncomingFixMessageWorker>();
+    builder.Services.AddHostedService<FixMessageRecoveryWorker>();
+    builder.Services.AddHostedService<OutgoingFixMessageWorker>();
+    builder.Services.AddHostedService<QuoteExecutionReconciliationWorker>();
+}
+else
+{
+    // Development testing:
+    // Process synthetic inbound FIX messages without connecting to CHSE.
+    builder.Services.AddHostedService<IncomingFixMessageWorker>();
+}
+
 builder.Services.AddSingleton<
     IIncomingFixMessageQueue,
     IncomingFixMessageQueue>();
@@ -165,22 +187,102 @@ builder.Services.AddSingleton<
 builder.Services.AddSingleton<
     IOutgoingFixMessageQueue,
     OutgoingFixMessageQueue>();    
-builder.Services.AddHostedService<IncomingFixMessageWorker>();   
+   
 builder.Services.AddScoped<ExecutionReportPersistenceService>(); 
 builder.Services.AddScoped<FixMessageProcessor>();
-builder.Services.AddHostedService<FixMessageRecoveryWorker>();
-builder.Services.AddHostedService<OutgoingFixMessageWorker>();
+
+
 builder.Services.AddSingleton<FixOrderSubmissionService>();
+builder.Services.AddSingleton<FixQuoteSubmissionService>();
 builder.Services.AddHostedService<IdentitySeedHostedService>();
 builder.Services.AddScoped<BusinessMessageRejectPersistenceService>();
 builder.Services.AddScoped<OrderCancelRejectPersistenceService>();
 builder.Services.AddScoped<OrderCancellationService>();
+builder.Services.AddScoped<QuoteExecutionReconciliationService>();
+
 builder.Services.AddScoped<OrderReplacementService>();
 builder.Services.AddScoped<SessionRejectPersistenceService>();
+builder.Services.AddScoped<QuoteStatusReportPersistenceService>();
 
 
 var app = builder.Build();
 
+////////////////////////////////
+/// Temporary endpointo to test quotes
+/// 
+
+// Temporary development-only endpoint for synthetic FIX testing.
+
+// Temporary development-only endpoint for synthetic FIX testing.
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost(
+        "/__dev/fix/inbound-execution-report",
+        async (
+            SyntheticFixMessageRequest request,
+            IIncomingFixMessageQueue queue,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.RawMessage))
+            {
+                return Results.BadRequest(
+                    "Raw FIX message is required.");
+            }
+
+            if (request.MsgSeqNum <= 0)
+            {
+                return Results.BadRequest(
+                    "MsgSeqNum must be greater than zero.");
+            }
+
+            // Preserve the existing test session as the default.
+            var sessionQualifier =
+                string.IsNullOrWhiteSpace(request.SessionQualifier)
+                    ? "TEST-QUOTE-LATE-REF-SESSION-002"
+                    : request.SessionQualifier.Trim();
+
+            var sessionId =
+                $"FIXT.1.1:CSECOMPN1->FGW:{sessionQualifier}";
+
+            var incomingMessage = new IncomingFixMessage
+            {
+                SessionId = sessionId,
+
+                BeginString = "FIXT.1.1",
+                SenderCompID = "CSECOMPN1",
+                TargetCompID = "FGW",
+
+                SessionQualifier = sessionQualifier,
+
+                MsgType = "8",
+                ClOrdId = request.ClOrdId,
+                RawMessage = request.RawMessage,
+
+                MsgSeqNum = request.MsgSeqNum,
+                PossDupFlag = false,
+                PossResend = false,
+
+                ReceivedAtUtc = DateTimeOffset.UtcNow
+            };
+
+            await queue.EnqueueAsync(
+                incomingMessage,
+                cancellationToken);
+
+            return Results.Accepted(
+                value: new
+                {
+                    Message = "Synthetic FIX message queued.",
+                    SessionId = incomingMessage.SessionId,
+                    MsgType = incomingMessage.MsgType,
+                    MsgSeqNum = incomingMessage.MsgSeqNum
+                });
+        });
+}
+
+
+
+// Temporary endpoint to test quotes ends
 
 
 // Enable Swagger in Development
@@ -216,4 +318,19 @@ using (var scope = app.Services.CreateScope())
     await IdentitySeeder.SeedRolesAsync(roleManager);
 }
 
+
+
 app.Run();
+
+////////////////////////////////
+/// Temporary endpointo to test quotes
+/// 
+
+public record SyntheticFixMessageRequest(
+    string ClOrdId,
+    string RawMessage,
+    int MsgSeqNum,
+    string? SessionQualifier = null);
+
+
+//// ENds

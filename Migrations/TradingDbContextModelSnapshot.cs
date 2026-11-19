@@ -216,6 +216,10 @@ namespace TradingBackend.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("ApplId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<decimal?>("AvgPx")
                         .HasPrecision(20, 8)
                         .HasColumnType("numeric(20,8)");
@@ -274,6 +278,10 @@ namespace TradingBackend.Api.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<string>("MultiLegReportingType")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)");
+
                     b.Property<string>("OrdRejReason")
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
@@ -290,8 +298,19 @@ namespace TradingBackend.Api.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("character varying(1)");
 
+                    b.Property<string>("QuoteCorrelationStatus")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<long?>("QuoteEntryRevisionId")
+                        .HasColumnType("bigint");
+
                     b.Property<long?>("ReferencedExecutionId")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("SecondaryOrderId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("SecondaryTradeId")
                         .HasMaxLength(128)
@@ -322,12 +341,24 @@ namespace TradingBackend.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("QuoteCorrelationStatus");
+
+                    b.HasIndex("QuoteEntryRevisionId");
+
                     b.HasIndex("ReferencedExecutionId");
 
                     b.HasIndex("TradingOrderId");
 
                     b.HasIndex("SessionId", "ExecId")
                         .IsUnique();
+
+                    b.HasIndex("SessionId", "ClOrdId", "ExchangeOrderId")
+                        .HasDatabaseName("IX_executions_QuoteParentCorrelation")
+                        .HasFilter("\"MultiLegReportingType\" = '3' AND \"QuoteEntryRevisionId\" IS NOT NULL");
+
+                    b.HasIndex("SessionId", "ClOrdId", "SecondaryOrderId")
+                        .HasDatabaseName("IX_executions_PendingQuoteLegs")
+                        .HasFilter("\"MultiLegReportingType\" = '2' AND \"QuoteCorrelationStatus\" = 'UNRESOLVED' AND \"QuoteEntryRevisionId\" IS NULL");
 
                     b.ToTable("executions", (string)null);
                 });
@@ -699,6 +730,315 @@ namespace TradingBackend.Api.Migrations
                     b.ToTable("order_replacement_requests", (string)null);
                 });
 
+            modelBuilder.Entity("TradingBackend.Api.Entities.Quote", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FirmId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<long?>("LatestSubmissionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("OrderBook")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("TradingMnemonic")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FirmId");
+
+                    b.HasIndex("LatestSubmissionId");
+
+                    b.HasIndex("FirmId", "TradingMnemonic", "Symbol", "OrderBook");
+
+                    b.ToTable("quotes", (string)null);
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteEntryRevision", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("BidPx")
+                        .HasPrecision(20, 8)
+                        .HasColumnType("numeric(20,8)");
+
+                    b.Property<decimal?>("BidSize")
+                        .HasPrecision(20, 6)
+                        .HasColumnType("numeric(20,6)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExecInst")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)");
+
+                    b.Property<decimal?>("MinQty")
+                        .HasPrecision(20, 6)
+                        .HasColumnType("numeric(20,6)");
+
+                    b.Property<decimal?>("OfferPx")
+                        .HasPrecision(20, 8)
+                        .HasColumnType("numeric(20,8)");
+
+                    b.Property<decimal?>("OfferSize")
+                        .HasPrecision(20, 6)
+                        .HasColumnType("numeric(20,6)");
+
+                    b.Property<string>("PreTradeAnonymity")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)");
+
+                    b.Property<string>("QuoteEntryID")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("QuoteId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("QuoteQualifier")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)");
+
+                    b.Property<long?>("QuoteSetId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("QuoteSubmissionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset?>("ValidUntilTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuoteId");
+
+                    b.HasIndex("QuoteSetId");
+
+                    b.HasIndex("QuoteSubmissionId");
+
+                    b.HasIndex("QuoteId", "CreatedAtUtc");
+
+                    b.HasIndex("QuoteSubmissionId", "QuoteSetId", "QuoteEntryID");
+
+                    b.ToTable("quote_entry_revisions", (string)null);
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteSet", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool?>("LastFragment")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("QuoteSetID")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("QuoteSetValidUntilTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("QuoteSubmissionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TotNoQuoteEntries")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UnderlyingSymbol")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuoteSubmissionId");
+
+                    b.HasIndex("QuoteSubmissionId", "QuoteSetID")
+                        .IsUnique();
+
+                    b.ToTable("quote_sets", (string)null);
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteStatusHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ApplID")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BidID")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("FixMessageLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("MsgType")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<string>("OfferID")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("QuoteEntryRevisionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("QuoteId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("QuoteRejectReason")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("QuoteStatus")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<long?>("QuoteSubmissionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("TransactTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FixMessageLogId");
+
+                    b.HasIndex("QuoteEntryRevisionId");
+
+                    b.HasIndex("QuoteId");
+
+                    b.HasIndex("QuoteSubmissionId");
+
+                    b.HasIndex("QuoteId", "CreatedAtUtc");
+
+                    b.ToTable("quote_status_history", (string)null);
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteSubmission", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Account")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ApplID")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FirmId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MsgType")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<string>("QuoteID")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("QuoteMsgID")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("QuoteReqID")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SubmissionStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset?>("SubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("FirmId");
+
+                    b.HasIndex("QuoteID");
+
+                    b.HasIndex("QuoteMsgID");
+
+                    b.HasIndex("SessionId", "MsgType");
+
+                    b.ToTable("quote_submissions", (string)null);
+                });
+
             modelBuilder.Entity("TradingBackend.Api.Entities.TradingOrder", b =>
                 {
                     b.Property<long>("Id")
@@ -956,6 +1296,11 @@ namespace TradingBackend.Api.Migrations
 
             modelBuilder.Entity("TradingBackend.Api.Entities.Execution", b =>
                 {
+                    b.HasOne("TradingBackend.Api.Entities.QuoteEntryRevision", "QuoteEntryRevision")
+                        .WithMany()
+                        .HasForeignKey("QuoteEntryRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("TradingBackend.Api.Entities.Execution", "ReferencedExecution")
                         .WithMany("RelatedExecutions")
                         .HasForeignKey("ReferencedExecutionId")
@@ -965,6 +1310,8 @@ namespace TradingBackend.Api.Migrations
                         .WithMany("Executions")
                         .HasForeignKey("TradingOrderId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("QuoteEntryRevision");
 
                     b.Navigation("ReferencedExecution");
 
@@ -1020,6 +1367,86 @@ namespace TradingBackend.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("TradingOrder");
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.Quote", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.Firm", "Firm")
+                        .WithMany()
+                        .HasForeignKey("FirmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TradingBackend.Api.Entities.QuoteSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("LatestSubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Firm");
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteEntryRevision", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.Quote", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TradingBackend.Api.Entities.QuoteSet", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteSetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TradingBackend.Api.Entities.QuoteSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteSubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteSet", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.QuoteSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteSubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteStatusHistory", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.FixMessageLog", null)
+                        .WithMany()
+                        .HasForeignKey("FixMessageLogId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TradingBackend.Api.Entities.QuoteEntryRevision", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteEntryRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TradingBackend.Api.Entities.Quote", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TradingBackend.Api.Entities.QuoteSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteSubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TradingBackend.Api.Entities.QuoteSubmission", b =>
+                {
+                    b.HasOne("TradingBackend.Api.Entities.Firm", "Firm")
+                        .WithMany()
+                        .HasForeignKey("FirmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Firm");
                 });
 
             modelBuilder.Entity("TradingBackend.Api.Entities.TradingOrder", b =>

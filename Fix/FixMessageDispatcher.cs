@@ -1,8 +1,10 @@
 
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using QuickFix;
 using QuickFix.Fields;
 using TradingBackend.Api.DTOs.Orders;
+using TradingBackend.Api.DTOs.Quotes;
 
 namespace TradingBackend.Api.Fix;
 
@@ -35,7 +37,7 @@ public class FixMessageDispatcher
 
             case "j":
                 // BusinessMessageReject is parsed and persisted by FixMessageProcessor.
-                break;  
+                break;
 
             case "9":
                 HandleOrderCancelReject(message, sessionId);
@@ -67,7 +69,6 @@ public class FixMessageDispatcher
         return null;
     }
 
-
     private ExecutionReportDto HandleExecutionReport(
         Message message,
         SessionID sessionId)
@@ -97,21 +98,110 @@ public class FixMessageDispatcher
         }
     }
 
-private static string? ReadField(Message message, int tag)
-{
-    return message.IsSetField(tag)
-        ? message.GetString(tag)
-        : null;
-}
+    private static string? ReadField(Message message, int tag)
+    {
+        return message.IsSetField(tag)
+            ? message.GetString(tag)
+            : null;
+    }
 
+    private static int? ReadIntField(Message message, int tag)
+    {
+        var value = ReadField(message, tag);
+
+        return int.TryParse(value, out var result)
+            ? result
+            : null;
+    }
+
+    public QuoteStatusReportDto ParseQuoteStatusReport(
+        Message message,
+        SessionID sessionId)
+    {
+        string? quoteStatus = ReadField(message, 297);
+        string? transactTimeValue = ReadField(message, 60);
+        string? orderBookValue = ReadField(message, 30001);
+        string? rejectReason = ReadField(message, 300);
+
+        if (string.IsNullOrWhiteSpace(quoteStatus))
+        {
+            throw new FormatException(
+                "QuoteStatus Report is missing required tag 297 (QuoteStatus).");
+        }
+
+        if (!int.TryParse(orderBookValue, out int orderBook))
+        {
+            throw new FormatException(
+                "QuoteStatus Report has a missing or invalid tag 30001 (OrderBook).");
+        }
+
+        if (string.IsNullOrWhiteSpace(transactTimeValue))
+        {
+            throw new FormatException(
+                "QuoteStatus Report is missing required tag 60 (TransactTime).");
+        }
+
+        if (quoteStatus == "5" &&
+            string.IsNullOrWhiteSpace(rejectReason))
+        {
+            throw new FormatException(
+                "Rejected QuoteStatus Report (297=5) must contain tag 300 (QuoteRejectReason).");
+        }
+
+        string[] transactTimeFormats =
+        {
+            "yyyyMMdd-HH:mm:ss.FFFFFFF",
+            "yyyyMMdd-HH:mm:ss"
+        };
+
+        if (!DateTimeOffset.TryParseExact(
+                transactTimeValue,
+                transactTimeFormats,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal |
+                DateTimeStyles.AdjustToUniversal,
+                out DateTimeOffset transactTime))
+        {
+            throw new FormatException(
+                $"QuoteStatus Report contains an invalid TransactTime: {transactTimeValue}");
+        }
+
+        var report = new QuoteStatusReportDto
+        {
+            SessionId = sessionId.ToString(),
+
+            ApplID = ReadField(message, 1180),
+            QuoteMsgID = ReadField(message, 1166),
+            BidID = ReadField(message, 30007),
+            OfferID = ReadField(message, 30008),
+
+            QuoteStatus = quoteStatus,
+            QuoteRejectReason = rejectReason,
+            Text = ReadField(message, 58),
+
+            TransactTime = transactTime,
+            OrderBook = orderBook
+        };
+
+        _logger.LogInformation(
+            "QuoteStatusReport parsed. Session: {SessionId}, " +
+            "QuoteMsgID: {QuoteMsgID}, QuoteStatus: {QuoteStatus}, " +
+            "OrderBook: {OrderBook}, RejectReason: {RejectReason}",
+            report.SessionId,
+            report.QuoteMsgID,
+            report.QuoteStatus,
+            report.OrderBook,
+            report.QuoteRejectReason);
+
+        return report;
+    }
 
     private void HandleOrderCancelReject(
         Message message,
         SessionID sessionId)
     {
         _logger.LogInformation(
-            "OrderCancelReject received from CHSE."
-        );
+            "OrderCancelReject received from CHSE.");
     }
 
     private void HandleMassQuoteAcknowledgement(
@@ -119,8 +209,7 @@ private static string? ReadField(Message message, int tag)
         SessionID sessionId)
     {
         _logger.LogInformation(
-            "MassQuoteAcknowledgement received from CHSE."
-        );
+            "MassQuoteAcknowledgement received from CHSE.");
     }
 
     private void HandleQuoteStatusReport(
@@ -128,8 +217,7 @@ private static string? ReadField(Message message, int tag)
         SessionID sessionId)
     {
         _logger.LogInformation(
-            "QuoteStatusReport received from CHSE."
-        );
+            "QuoteStatusReport received from CHSE.");
     }
 
     private void HandleQuoteRequestReject(
@@ -137,8 +225,7 @@ private static string? ReadField(Message message, int tag)
         SessionID sessionId)
     {
         _logger.LogInformation(
-            "QuoteRequestReject received from CHSE."
-        );
+            "QuoteRequestReject received from CHSE.");
     }
 
     private void HandleOrderMassCancelReport(
@@ -146,12 +233,8 @@ private static string? ReadField(Message message, int tag)
         SessionID sessionId)
     {
         _logger.LogInformation(
-            "OrderMassCancelReport received from CHSE."
-        );
+            "OrderMassCancelReport received from CHSE.");
     }
-
-    
-
 
     public BusinessMessageRejectDto ParseBusinessMessageReject(
         Message message,
@@ -212,42 +295,32 @@ private static string? ReadField(Message message, int tag)
         };
     }
 
-public SessionRejectDto ParseSessionReject(
-    Message message,
-    SessionID sessionId)
-{
-    var reject = new SessionRejectDto
+    public SessionRejectDto ParseSessionReject(
+        Message message,
+        SessionID sessionId)
     {
-        SessionId = sessionId.ToString(),
+        var reject = new SessionRejectDto
+        {
+            SessionId = sessionId.ToString(),
 
-        RefSeqNum = ReadIntField(message, 45),
-        RefTagID = ReadField(message, 371),
-        RefMsgType = ReadField(message, 372),
-        SessionRejectReason = ReadIntField(message, 373),
-        Text = ReadField(message, 58)
-    };
+            RefSeqNum = ReadIntField(message, 45),
+            RefTagID = ReadField(message, 371),
+            RefMsgType = ReadField(message, 372),
+            SessionRejectReason = ReadIntField(message, 373),
+            Text = ReadField(message, 58)
+        };
 
-    _logger.LogWarning(
-        "SessionReject parsed. Session: {SessionId}, " +
-        "RefSeqNum: {RefSeqNum}, RefTagID: {RefTagID}, " +
-        "RefMsgType: {RefMsgType}, Reason: {Reason}, Text: {Text}",
-        sessionId,
-        reject.RefSeqNum,
-        reject.RefTagID,
-        reject.RefMsgType,
-        reject.SessionRejectReason,
-        reject.Text);
+        _logger.LogWarning(
+            "SessionReject parsed. Session: {SessionId}, " +
+            "RefSeqNum: {RefSeqNum}, RefTagID: {RefTagID}, " +
+            "RefMsgType: {RefMsgType}, Reason: {Reason}, Text: {Text}",
+            sessionId,
+            reject.RefSeqNum,
+            reject.RefTagID,
+            reject.RefMsgType,
+            reject.SessionRejectReason,
+            reject.Text);
 
-    return reject;
-}
-
-    private static int? ReadIntField(Message message, int tag)
-    {
-        var value = ReadField(message, tag);
-
-        return int.TryParse(value, out var result)
-            ? result
-            : null;
+        return reject;
     }
-
 }

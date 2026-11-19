@@ -20,6 +20,18 @@ public class TradingDbContext
     public DbSet<TradingOrder> Orders => Set<TradingOrder>();
 
     public DbSet<Execution> Executions => Set<Execution>();
+    public DbSet<Quote> Quotes => Set<Quote>();
+
+    public DbSet<QuoteSubmission> QuoteSubmissions
+        => Set<QuoteSubmission>();
+
+    public DbSet<QuoteSet> QuoteSets => Set<QuoteSet>();
+
+    public DbSet<QuoteEntryRevision> QuoteEntryRevisions
+        => Set<QuoteEntryRevision>();
+
+    public DbSet<QuoteStatusHistory> QuoteStatusHistory
+        => Set<QuoteStatusHistory>();
 
     public DbSet<FixMessageLog> FixMessageLogs
         => Set<FixMessageLog>();

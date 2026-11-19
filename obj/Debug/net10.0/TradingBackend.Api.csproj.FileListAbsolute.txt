@@ -173,3 +173,5 @@ D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.
 D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\QuoteSetConfiguration.cs
 D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\QuoteEntryRevisionConfiguration.cs
 D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\QuoteStatusHistoryConfiguration.cs
+D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\DTOs\Quotes\CreateSingleQuoteDto.cs
+D:\SHAFIQ-D\my_projects\vb.net-c#\Trading_FE\TradingBackend.Api\bin\Debug\net10.0\Configuration\DTOs\Quotes\QuoteStatusReportDto.cs

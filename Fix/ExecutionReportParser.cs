@@ -203,6 +203,20 @@ public class ExecutionReportParser
     {
         Require(report.OrdRejReason, nameof(report.OrdRejReason));
     }
+    
+    if (report.MultiLegReportingType is not null &&
+    report.MultiLegReportingType is not ("1" or "2" or "3"))
+    {
+        throw new InvalidOperationException(
+            $"Invalid CHSE MultiLegReportingType: {report.MultiLegReportingType}");
+    }
+
+    if (report.MultiLegReportingType == "2")
+    {
+        Require(
+            report.SecondaryOrderId,
+            nameof(report.SecondaryOrderId));
+    }
 }
 
 private static void Require(

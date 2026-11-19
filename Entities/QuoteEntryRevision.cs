@@ -1,3 +1,4 @@
+
 namespace TradingBackend.Api.Entities;
 
 public class QuoteEntryRevision
@@ -26,6 +27,17 @@ public class QuoteEntryRevision
     // Offer side
     public decimal? OfferPx { get; set; }
     public decimal? OfferSize { get; set; }
+
+    // Additional quote parameters
+    public decimal? MinQty { get; set; }
+
+    public DateTimeOffset? ValidUntilTime { get; set; }
+
+    public string? ExecInst { get; set; }
+
+    public string? PreTradeAnonymity { get; set; }
+
+    public string? QuoteQualifier { get; set; }
 
     // Revision lifecycle
     public string Status { get; set; } = "PendingSubmission";

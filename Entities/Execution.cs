@@ -33,6 +33,13 @@ public class Execution
     public long? TradingOrderId { get; set; }
     // Relationship with Quote Entry Revision
     public long? QuoteEntryRevisionId { get; set; }
+    // Quote execution correlation
+    public string? QuoteCorrelationStatus { get; set; }
+
+    // Additional CHSE execution identifiers
+    public string? ApplId { get; set; }
+    public string? MultiLegReportingType { get; set; }
+    public string? SecondaryOrderId { get; set; }
 
     public QuoteEntryRevision? QuoteEntryRevision { get; set; }
 

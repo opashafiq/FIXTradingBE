@@ -926,3 +926,164 @@
 20261117-09:23:19.035 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
    at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
    at QuickFix.SocketInitiatorThread.Read()
+20261118-04:56:28.986 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: Resetting...
+20261118-04:56:28.989 : Session reset: New session
+20261118-04:56:28.990 : Created session
+20261118-04:56:28.994 : Connecting to 192.168.17.14 on port 7502
+20261118-04:56:29.012 : Connection succeeded
+20261118-04:56:29.096 : Initiated logon request
+20261118-04:56:29.124 : Received logon
+20261118-05:03:02.118 : Initiated logout request
+20261118-05:03:02.123 : Received logout response
+20261118-05:03:02.123 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-05:03:02.149 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-05:03:46.054 : Created session
+20261118-05:03:46.059 : Connecting to 192.168.17.14 on port 7502
+20261118-05:03:46.077 : Connection succeeded
+20261118-05:03:46.099 : Initiated logon request
+20261118-05:03:46.115 : Received logon
+20261118-05:05:19.135 : Initiated logout request
+20261118-05:05:19.139 : Received logout response
+20261118-05:05:19.140 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-05:05:19.164 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-05:34:56.892 : Created session
+20261118-05:34:56.898 : Connecting to 192.168.17.14 on port 7502
+20261118-05:34:56.914 : Connection succeeded
+20261118-05:34:56.937 : Initiated logon request
+20261118-05:34:56.957 : Received logon
+20261118-05:41:24.085 : Initiated logout request
+20261118-05:41:24.088 : Received logout response
+20261118-05:41:24.088 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-05:41:24.101 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-05:41:52.237 : Created session
+20261118-05:41:52.243 : Connecting to 192.168.17.14 on port 7502
+20261118-05:41:52.260 : Connection succeeded
+20261118-05:41:52.281 : Initiated logon request
+20261118-05:41:52.298 : Received logon
+20261118-08:25:17.487 : Initiated logout request
+20261118-08:25:17.492 : Received logout response
+20261118-08:25:17.493 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-08:25:17.506 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-08:36:24.563 : Created session
+20261118-08:36:24.568 : Connecting to 192.168.17.14 on port 7502
+20261118-08:36:24.585 : Connection succeeded
+20261118-08:36:24.606 : Initiated logon request
+20261118-08:36:24.621 : Received logon
+20261118-08:54:55.635 : Initiated logout request
+20261118-08:54:55.638 : Received logout response
+20261118-08:54:55.639 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-08:54:55.662 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-08:56:38.466 : Created session
+20261118-08:56:38.471 : Connecting to 192.168.17.14 on port 7502
+20261118-08:56:38.489 : Connection succeeded
+20261118-08:56:38.511 : Initiated logon request
+20261118-08:56:38.527 : Received logon
+20261118-08:56:54.594 : Initiated logout request
+20261118-08:56:54.599 : Received logout response
+20261118-08:56:54.600 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-08:56:54.617 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at System.Threading.CancellationTokenSource.get_Token()
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-08:57:05.801 : Created session
+20261118-08:57:05.807 : Connecting to 192.168.17.14 on port 7502
+20261118-08:57:05.827 : Connection succeeded
+20261118-08:57:05.915 : Initiated logon request
+20261118-08:57:05.931 : Received logon
+20261118-09:24:18.997 : Initiated logout request
+20261118-09:24:18.999 : Received logout response
+20261118-09:24:18.999 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-09:24:19.008 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-12:42:29.715 : Created session
+20261118-12:42:29.720 : Connecting to 192.168.17.14 on port 7502
+20261118-12:42:29.737 : Connection succeeded
+20261118-12:42:29.756 : Initiated logon request
+20261118-12:42:29.771 : Received logon
+20261118-12:43:04.819 : Initiated logout request
+20261118-12:43:04.821 : Received logout response
+20261118-12:43:04.822 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-12:43:04.830 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at System.Threading.CancellationTokenSource.get_Token()
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-12:43:24.733 : Created session
+20261118-12:43:24.741 : Connecting to 192.168.17.14 on port 7502
+20261118-12:43:24.758 : Connection succeeded
+20261118-12:43:24.843 : Initiated logon request
+20261118-12:43:24.860 : Received logon
+20261118-12:44:18.038 : Initiated logout request
+20261118-12:44:18.042 : Received logout response
+20261118-12:44:18.043 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-12:44:18.050 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at System.Threading.CancellationTokenSource.get_Token()
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-12:45:09.936 : Created session
+20261118-12:45:09.941 : Connecting to 192.168.17.14 on port 7502
+20261118-12:45:10.035 : Connection succeeded
+20261118-12:45:10.058 : Initiated logon request
+20261118-12:45:10.079 : Received logon
+20261118-13:36:20.179 : Initiated logout request
+20261118-13:36:20.183 : Received logout response
+20261118-13:36:20.184 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-13:36:20.193 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261118-13:36:41.284 : Created session
+20261118-13:36:41.292 : Connecting to 192.168.17.14 on port 7502
+20261118-13:36:41.315 : Connection succeeded
+20261118-13:36:41.411 : Initiated logon request
+20261118-13:36:41.469 : Received logon
+20261118-13:37:44.444 : Initiated logout request
+20261118-13:37:44.446 : Received logout response
+20261118-13:37:44.446 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261118-13:37:44.454 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261119-13:48:53.778 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: Resetting...
+20261119-13:48:53.781 : Session reset: New session
+20261119-13:48:53.782 : Created session
+20261119-13:48:53.787 : Connecting to 192.168.17.14 on port 7502
+20261119-13:48:53.807 : Connection succeeded
+20261119-13:48:53.830 : Initiated logon request
+20261119-13:48:53.863 : Received logon
+20261119-14:44:58.928 : Initiated logout request
+20261119-14:44:58.930 : Received logout response
+20261119-14:44:58.930 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261119-14:44:58.932 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261119-14:46:52.304 : Created session
+20261119-14:46:52.310 : Connecting to 192.168.17.14 on port 7502
+20261119-14:46:52.329 : Connection succeeded
+20261119-14:46:52.351 : Initiated logon request
+20261119-14:46:52.365 : Received logon
+20261119-15:03:01.413 : Initiated logout request
+20261119-15:03:01.415 : Received logout response
+20261119-15:03:01.415 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261119-15:03:01.417 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()
+20261119-15:03:21.151 : Created session
+20261119-15:03:21.156 : Connecting to 192.168.17.14 on port 7502
+20261119-15:03:21.176 : Connection succeeded
+20261119-15:03:21.199 : Initiated logon request
+20261119-15:03:21.216 : Received logon
+20261119-15:14:06.994 : Initiated logout request
+20261119-15:14:06.996 : Received logout response
+20261119-15:14:06.996 : Session FIXT.1.1:CSECOMPN1->FGW disconnecting: Received logout response
+20261119-15:14:06.998 : Session FIXT.1.1:CSECOMPN1->FGW already disconnected: System.ObjectDisposedException: The CancellationTokenSource has been disposed.
+   at QuickFix.SocketInitiatorThread.ReadSome(Byte[] buffer, Int32 timeoutMilliseconds)
+   at QuickFix.SocketInitiatorThread.Read()

@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TradingBackend.Api.Entities;
@@ -31,6 +32,18 @@ public class QuoteEntryRevisionConfiguration
 
         entity.Property(x => x.OfferSize)
             .HasPrecision(20, 6);
+
+        entity.Property(x => x.MinQty)
+            .HasPrecision(20, 6);
+
+        entity.Property(x => x.ExecInst)
+            .HasMaxLength(1);
+
+        entity.Property(x => x.PreTradeAnonymity)
+            .HasMaxLength(1);
+
+        entity.Property(x => x.QuoteQualifier)
+            .HasMaxLength(1);
 
         entity.Property(x => x.Status)
             .HasMaxLength(32)

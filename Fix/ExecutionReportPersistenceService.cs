@@ -11,16 +11,260 @@ public class ExecutionReportPersistenceService
 {
     private readonly TradingDbContext _dbContext;
     private readonly ILogger<ExecutionReportPersistenceService> _logger;
-
+    private readonly QuoteExecutionReconciliationService _quoteExecutionReconciliationService;
     public ExecutionReportPersistenceService(
         TradingDbContext dbContext,
-        ILogger<ExecutionReportPersistenceService> logger)
+        ILogger<ExecutionReportPersistenceService> logger,
+        QuoteExecutionReconciliationService quoteExecutionReconciliationService)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _quoteExecutionReconciliationService =
+            quoteExecutionReconciliationService;
     }
 
 
+
+private async Task<QuoteCorrelationResult> CorrelateQuoteExecutionAsync(
+    ExecutionReportDto report,
+    CancellationToken cancellationToken)
+{
+    if (string.IsNullOrWhiteSpace(report.ClOrdId))
+    {
+        return new QuoteCorrelationResult();
+    }
+
+
+    // Individual leg execution of a multi-leg quote.
+    // CHSE SecondaryOrderID (198) identifies the strategy-side
+    // OrderID (37), not the individual leg OrderID.
+    if (report.MultiLegReportingType == "2")
+    {
+        if (string.IsNullOrWhiteSpace(report.SecondaryOrderId))
+        {
+            return new QuoteCorrelationResult
+            {
+                Status = "UNRESOLVED"
+            };
+        }
+
+        // Find the previously persisted overall strategy execution.
+        var parentQuoteRevisionIds = await _dbContext.Executions
+            .Where(x =>
+                x.SessionId == report.SessionId &&
+                x.ClOrdId == report.ClOrdId &&
+                x.MultiLegReportingType == "3" &&
+                x.ExchangeOrderId == report.SecondaryOrderId &&
+                x.QuoteEntryRevisionId.HasValue)
+            .Select(x => x.QuoteEntryRevisionId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (parentQuoteRevisionIds.Count == 1)
+        {
+            return new QuoteCorrelationResult
+            {
+                Status = "MATCHED",
+                QuoteEntryRevisionId = parentQuoteRevisionIds[0]
+            };
+        }
+
+        if (parentQuoteRevisionIds.Count > 1)
+        {
+            return new QuoteCorrelationResult
+            {
+                Status = "AMBIGUOUS"
+            };
+        }
+
+        // The parent execution may not have arrived yet.
+        // Determine whether this report belongs to a known quote.
+        bool singleQuoteExists =
+            await _dbContext.QuoteSubmissions.AnyAsync(
+                x => x.SessionId == report.SessionId &&
+                    x.MsgType == "S" &&
+                    x.QuoteMsgID == report.ClOrdId,
+                cancellationToken);
+
+        bool massQuoteExists =
+            await _dbContext.QuoteSubmissions.AnyAsync(
+                x => x.SessionId == report.SessionId &&
+                    x.MsgType == "i" &&
+                    x.QuoteID == report.ClOrdId,
+                cancellationToken);
+
+        bool massQuoteEntryExists = await (
+            from submission in _dbContext.QuoteSubmissions
+            join revision in _dbContext.QuoteEntryRevisions
+                on submission.Id equals revision.QuoteSubmissionId
+            where submission.SessionId == report.SessionId
+                && submission.MsgType == "i"
+                && revision.QuoteEntryID == report.ClOrdId
+            select revision.Id
+        ).AnyAsync(cancellationToken);
+
+        if (singleQuoteExists ||
+            massQuoteExists ||
+            massQuoteEntryExists)
+        {
+            return new QuoteCorrelationResult
+            {
+                Status = "UNRESOLVED"
+            };
+        }
+
+        return new QuoteCorrelationResult();
+    }
+
+
+    // Single Quote correlation:
+    // ClOrdID corresponds to QuoteMsgID.
+    var singleQuoteCandidates = await (
+        from submission in _dbContext.QuoteSubmissions
+        join revision in _dbContext.QuoteEntryRevisions
+            on submission.Id equals revision.QuoteSubmissionId
+        where submission.SessionId == report.SessionId
+              && submission.MsgType == "S"
+              && submission.QuoteMsgID == report.ClOrdId
+        select new
+        {
+            RevisionId = revision.Id,
+            revision.Symbol
+        })
+        .ToListAsync(cancellationToken);
+
+    var matchingSingleQuotes = singleQuoteCandidates
+        .Where(x =>
+            !string.IsNullOrWhiteSpace(report.Symbol) &&
+            x.Symbol == report.Symbol)
+        .ToList();
+
+    if (matchingSingleQuotes.Count == 1)
+    {
+        return new QuoteCorrelationResult
+        {
+            Status = "MATCHED",
+            QuoteEntryRevisionId = matchingSingleQuotes[0].RevisionId
+        };
+    }
+
+    if (matchingSingleQuotes.Count > 1)
+    {
+        return new QuoteCorrelationResult
+        {
+            Status = "AMBIGUOUS"
+        };
+    }
+
+    // Check whether a Single Quote submission exists
+    // even if its revision cannot be located.
+    bool singleQuoteSubmissionExists =
+        await _dbContext.QuoteSubmissions.AnyAsync(
+            x => x.SessionId == report.SessionId &&
+                 x.MsgType == "S" &&
+                 x.QuoteMsgID == report.ClOrdId,
+            cancellationToken);
+
+    if (singleQuoteSubmissionExists)
+    {
+        return new QuoteCorrelationResult
+        {
+            Status = "UNRESOLVED"
+        };
+    }
+
+    // Mass Quote correlation.
+    // CHSE documentation has conflicting descriptions of
+    // the ClOrdID value, so neither identifier is sufficient
+    // to establish a confirmed match at this stage.
+    var massQuoteCandidates = await (
+        from submission in _dbContext.QuoteSubmissions
+        join revision in _dbContext.QuoteEntryRevisions
+            on submission.Id equals revision.QuoteSubmissionId
+        where submission.SessionId == report.SessionId
+              && submission.MsgType == "i"
+              && (
+                  submission.QuoteID == report.ClOrdId ||
+                  revision.QuoteEntryID == report.ClOrdId
+              )
+        select new
+        {
+            RevisionId = revision.Id,
+            revision.Symbol
+        })
+        .ToListAsync(cancellationToken);
+
+    var matchingMassQuotes = massQuoteCandidates
+        .Where(x =>
+            !string.IsNullOrWhiteSpace(report.Symbol) &&
+            x.Symbol == report.Symbol)
+        .ToList();
+
+    if (matchingMassQuotes.Count > 1)
+    {
+        return new QuoteCorrelationResult
+        {
+            Status = "AMBIGUOUS"
+        };
+    }
+
+    if (matchingMassQuotes.Count == 1)
+    {
+        return new QuoteCorrelationResult
+        {
+            Status = "UNRESOLVED"
+        };
+    }
+
+    // Also recognize a Mass Quote submission that has no
+    // corresponding revision record.
+    bool massQuoteSubmissionExists =
+        await _dbContext.QuoteSubmissions.AnyAsync(
+            x => x.SessionId == report.SessionId &&
+                 x.MsgType == "i" &&
+                 x.QuoteID == report.ClOrdId,
+            cancellationToken);
+
+    return massQuoteSubmissionExists
+        ? new QuoteCorrelationResult
+        {
+            Status = "UNRESOLVED"
+        }
+        : new QuoteCorrelationResult();
+}
+
+    private async Task TryReconcileQuoteExecutionsAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            int reconciledCount =
+                await _quoteExecutionReconciliationService
+                    .ReconcilePendingAsync(cancellationToken);
+
+            if (reconciledCount > 0)
+            {
+                _logger.LogInformation(
+                    "Post-persistence quote execution reconciliation completed. " +
+                    "ReconciledCount={ReconciledCount}",
+                    reconciledCount);
+            }
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // The ExecutionReport is already committed.
+            // Reconciliation failure must not undo or misreport it.
+            _logger.LogError(
+                ex,
+                "Post-persistence quote execution reconciliation failed. " +
+                "The reconciliation can be retried later.");
+        }
+    }
 public async Task PersistAsync(
     ExecutionReportDto report,
     long logId,
@@ -282,6 +526,8 @@ public async Task PersistAsync(
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        await TryReconcileQuoteExecutionsAsync(cancellationToken);
+
         return;
     }
     var order = await _dbContext.OrderIdentifiers
@@ -297,6 +543,13 @@ public async Task PersistAsync(
         .OrderBy(x => x.ClOrdId == report.ClOrdId ? 0 : 1)
         .Select(x => x.TradingOrder)
         .FirstOrDefaultAsync(cancellationToken);
+
+    // If this is not an order execution, attempt quote correlation.
+    QuoteCorrelationResult quoteCorrelation = order == null
+    ? await CorrelateQuoteExecutionAsync(report, cancellationToken)
+    : new QuoteCorrelationResult();    
+
+
 
     Execution? referencedExecution = null;
 
@@ -339,15 +592,211 @@ public async Task PersistAsync(
         OrderBook = report.OrderBook,
         TransactTime = report.TransactTime,
         TradingOrderId = order?.Id,
+        // Quote execution correlation
+        QuoteEntryRevisionId = quoteCorrelation.QuoteEntryRevisionId,
+        QuoteCorrelationStatus = quoteCorrelation.Status,
+
+        // Additional CHSE execution identifiers
+        ApplId = report.ApplId,
+        MultiLegReportingType = report.MultiLegReportingType,
+        SecondaryOrderId = report.SecondaryOrderId,
         MdEntryId = report.MdEntryId,
         OrderCapacity = report.OrderCapacity,
         TrdMatchId = report.TrdMatchId,
         SecondaryTradeId = report.SecondaryTradeId,
         ExecRestatementReason = report.ExecRestatementReason,
-        OrdRejReason = report.OrdRejReason
+        OrdRejReason = report.OrdRejReason,
     };
 
+    // Validate the execution reference for quote corrections and cancellations.
+    if (quoteCorrelation.QuoteEntryRevisionId.HasValue &&
+        (report.ExecType == "G" || report.ExecType == "H"))
+    {
+        if (referencedExecution == null)
+        {
+            _logger.LogWarning(
+                "Quote correction/cancellation references an execution " +
+                "that has not been found. SessionId={SessionId}, " +
+                "ExecRefID={ExecRefId}, ExecID={ExecId}",
+                report.SessionId,
+                report.ExecRefId,
+                report.ExecId);
+        }
+        else if (referencedExecution.QuoteEntryRevisionId !=
+                quoteCorrelation.QuoteEntryRevisionId)
+        {
+            _logger.LogError(
+                "Quote correction/cancellation references an execution " +
+                "belonging to a different quote revision. " +
+                "SessionId={SessionId}, ExecRefID={ExecRefId}, " +
+                "ExecID={ExecId}, QuoteEntryRevisionId={QuoteEntryRevisionId}, " +
+                "ReferencedQuoteEntryRevisionId={ReferencedQuoteEntryRevisionId}",
+                report.SessionId,
+                report.ExecRefId,
+                report.ExecId,
+                quoteCorrelation.QuoteEntryRevisionId,
+                referencedExecution.QuoteEntryRevisionId);
+
+            // Do not create an invalid cross-quote execution relationship.
+            referencedExecution = null;
+            execution.ReferencedExecutionId = null;
+            execution.ReferencedExecution = null;
+        }
+    }
+
     _dbContext.Executions.Add(execution);
+
+    // Reconcile individual leg executions that arrived before
+    // their overall multi-leg strategy execution.
+    if (report.MultiLegReportingType == "3" &&
+        quoteCorrelation.QuoteEntryRevisionId.HasValue &&
+        !string.IsNullOrWhiteSpace(report.OrderId) &&
+        !string.IsNullOrWhiteSpace(report.ClOrdId))
+    {
+        await _dbContext.Database.ExecuteSqlRawAsync(
+        "SELECT pg_advisory_xact_lock(74021, 10);",
+        cancellationToken);
+
+        var unresolvedLegExecutions = await _dbContext.Executions
+            .Where(x =>
+                x.SessionId == report.SessionId &&
+                x.ClOrdId == report.ClOrdId &&
+                x.MultiLegReportingType == "2" &&
+                x.SecondaryOrderId == report.OrderId &&
+                x.QuoteEntryRevisionId == null &&
+                x.QuoteCorrelationStatus == "UNRESOLVED")
+            .ToListAsync(cancellationToken);
+
+
+var unresolvedLegExecutionIds = unresolvedLegExecutions
+    .Select(x => x.Id)
+    .ToHashSet();
+
+// First assign the parent quote revision to all matching legs.
+// This allows references between two legs in this batch
+// to be validated consistently.
+foreach (var legExecution in unresolvedLegExecutions)
+{
+    legExecution.QuoteEntryRevisionId =
+        quoteCorrelation.QuoteEntryRevisionId;
+
+    legExecution.QuoteCorrelationStatus = "MATCHED";
+}
+
+// Load references that are outside the reconciliation batch.
+var externalReferenceIds = unresolvedLegExecutions
+    .Where(x => x.ReferencedExecutionId.HasValue)
+    .Select(x => x.ReferencedExecutionId!.Value)
+    .Where(x => !unresolvedLegExecutionIds.Contains(x))
+    .Distinct()
+    .ToList();
+
+var externalReferences = await _dbContext.Executions
+    .Where(x => externalReferenceIds.Contains(x.Id))
+    .Select(x => new
+    {
+        x.Id,
+        x.QuoteEntryRevisionId
+    })
+    .ToDictionaryAsync(
+        x => x.Id,
+        x => x.QuoteEntryRevisionId,
+        cancellationToken);
+
+    // Validate each leg correction/cancellation reference.
+    foreach (var legExecution in unresolvedLegExecutions)
+    {
+        if (legExecution.ExecType != "G" &&
+            legExecution.ExecType != "H")
+        {
+            continue;
+        }
+
+if (!legExecution.ReferencedExecutionId.HasValue &&
+    !string.IsNullOrWhiteSpace(legExecution.ExecRefId))
+{
+    var sameBatchReference = unresolvedLegExecutions
+        .FirstOrDefault(candidate =>
+            candidate.Id != legExecution.Id &&
+            candidate.SessionId == legExecution.SessionId &&
+            candidate.ExecId == legExecution.ExecRefId);
+
+    if (sameBatchReference != null)
+    {
+        legExecution.ReferencedExecutionId = sameBatchReference.Id;
+        legExecution.ReferencedExecution = sameBatchReference;
+    }
+}
+
+if (!legExecution.ReferencedExecutionId.HasValue)
+{
+    _logger.LogWarning(
+        "Reconciled quote leg correction/cancellation has no " +
+        "resolved execution reference. SessionId={SessionId}, " +
+        "ExecID={ExecId}, ExecRefID={ExecRefId}",
+        legExecution.SessionId,
+        legExecution.ExecId,
+        legExecution.ExecRefId);
+
+    continue;
+}
+
+        long? referencedRevisionId = null;
+
+        if (unresolvedLegExecutionIds.Contains(
+            legExecution.ReferencedExecutionId.Value))
+        {
+            // The referenced leg was reconciled in this same batch.
+            referencedRevisionId =
+                quoteCorrelation.QuoteEntryRevisionId;
+        }
+        else if (externalReferences.TryGetValue(
+            legExecution.ReferencedExecutionId.Value,
+            out var externalRevisionId))
+        {
+            referencedRevisionId = externalRevisionId;
+        }
+
+        if (referencedRevisionId !=
+            quoteCorrelation.QuoteEntryRevisionId)
+        {
+            _logger.LogError(
+                "Reconciled quote leg correction/cancellation references " +
+                "an execution belonging to a different or unresolved " +
+                "quote revision. SessionId={SessionId}, ExecID={ExecId}, " +
+                "ExecRefID={ExecRefId}, QuoteEntryRevisionId={QuoteRevisionId}, " +
+                "ReferencedQuoteEntryRevisionId={ReferencedRevisionId}",
+                legExecution.SessionId,
+                legExecution.ExecId,
+                legExecution.ExecRefId,
+                quoteCorrelation.QuoteEntryRevisionId,
+                referencedRevisionId);
+
+            // Preserve ExecRefID, but remove an unverified relationship.
+            legExecution.ReferencedExecutionId = null;
+            legExecution.ReferencedExecution = null;
+        }
+    }
+
+
+        foreach (var legExecution in unresolvedLegExecutions)
+        {
+            legExecution.QuoteEntryRevisionId =
+                quoteCorrelation.QuoteEntryRevisionId;
+
+            legExecution.QuoteCorrelationStatus = "MATCHED";
+
+            _logger.LogInformation(
+                "Previously unresolved quote leg execution reconciled. " +
+                "SessionId={SessionId}, LegExecID={LegExecId}, " +
+                "ParentOrderID={ParentOrderId}, " +
+                "QuoteEntryRevisionId={QuoteEntryRevisionId}",
+                legExecution.SessionId,
+                legExecution.ExecId,
+                report.OrderId,
+                quoteCorrelation.QuoteEntryRevisionId);
+        }
+    }
 
     // Register a new client order identifier if necessary.
     if (order != null &&
@@ -407,10 +856,23 @@ public async Task PersistAsync(
                 order.TransactTime);
         }
     }
+    else if (quoteCorrelation.Status != null)
+    {
+        _logger.LogInformation(
+            "ExecutionReport classified as a quote execution. " +
+            "SessionId={SessionId}, ClOrdID={ClOrdId}, " +
+            "QuoteCorrelationStatus={QuoteCorrelationStatus}, " +
+            "QuoteEntryRevisionId={QuoteEntryRevisionId}",
+            report.SessionId,
+            report.ClOrdId,
+            quoteCorrelation.Status,
+            quoteCorrelation.QuoteEntryRevisionId);
+    }
     else
     {
         _logger.LogWarning(
-            "No matching order found for ExecutionReport. SessionId={SessionId}, ClOrdID={ClOrdId}",
+            "No matching order or quote found for ExecutionReport. " +
+            "SessionId={SessionId}, ClOrdID={ClOrdId}",
             report.SessionId,
             report.ClOrdId);
     }
@@ -420,6 +882,7 @@ public async Task PersistAsync(
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+        await TryReconcileQuoteExecutionsAsync(cancellationToken);
     }
     catch (DbUpdateException ex)
         when (IsDuplicateExecutionException(ex))
@@ -442,7 +905,12 @@ public async Task PersistAsync(
 }
 
 
+private sealed class QuoteCorrelationResult
+{
+    public string? Status { get; init; }
 
+    public long? QuoteEntryRevisionId { get; init; }
+}
     private static string GetExecutionCategory(string? execType)
     {
         return execType switch

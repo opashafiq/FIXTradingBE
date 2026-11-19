@@ -107,5 +107,43 @@ public class ExecutionConfiguration
 
     entity.HasIndex(x => x.ReferencedExecutionId);
 
+    entity.Property(x => x.QuoteCorrelationStatus)
+    .HasMaxLength(16);
+
+    entity.Property(x => x.ApplId)
+        .HasMaxLength(128);
+
+    entity.Property(x => x.MultiLegReportingType)
+        .HasMaxLength(1);
+
+    entity.Property(x => x.SecondaryOrderId)
+        .HasMaxLength(128);
+    entity.HasIndex(x => x.QuoteCorrelationStatus);
+
+    // Efficiently locate unresolved multi-leg quote executions.
+entity.HasIndex(x => new
+    {
+        x.SessionId,
+        x.ClOrdId,
+        x.SecondaryOrderId
+    })
+    .HasDatabaseName("IX_executions_PendingQuoteLegs")
+    .HasFilter(
+        "\"MultiLegReportingType\" = '2' " +
+        "AND \"QuoteCorrelationStatus\" = 'UNRESOLVED' " +
+        "AND \"QuoteEntryRevisionId\" IS NULL");
+
+// Efficiently locate correlated parent strategy executions.
+entity.HasIndex(x => new
+    {
+        x.SessionId,
+        x.ClOrdId,
+        x.ExchangeOrderId
+    })
+    .HasDatabaseName("IX_executions_QuoteParentCorrelation")
+    .HasFilter(
+        "\"MultiLegReportingType\" = '3' " +
+        "AND \"QuoteEntryRevisionId\" IS NOT NULL");
+
     }
 }
